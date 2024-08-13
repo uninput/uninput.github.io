@@ -1,0 +1,294 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><title>OrangePi搭建QQ机器人 | elaina</title><noscript>开启JavaScript才能访问本站哦~</noscript><link rel="icon" href="/img/pwa/favicon.png"><!-- index.css--><link rel="stylesheet" href="/css/index.css?v=2.0.7"><!-- inject head--><link rel="canonical" href="https://ashenwitch.top/posts/orangepi/"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"><!-- aplayer--><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aplayer/1.10.1/APlayer.min.css"><!-- swiper--><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.css"><!-- fancybox ui--><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.36/fancybox/fancybox.min.css"><!-- katex--><!-- Open Graph--><meta name="description" content="前言为什么选择开发板，因为便宜，但也有坏处，就是容易坏接下来你需要准备的有 orangepi 我的型号为orangepi zero 3 orangepi电源 选美规 网线可选可不选 一张sd卡 我的为铠侠g2 64G 读卡器 我的为联想USB3.0二合一读卡器 给香橙派装系统去官网下载对应的镜像"><!-- pwa--><meta name="theme-color" content="#006a73"><meta name="apple-mobile-web-app-status-bar-style" content="#006a73"><link rel="manifest" href="/manifest.json"><meta name="msapplication-TileColor" content="#006a73"><link rel="mask-icon" href="/img/pwa/favicon.png" color="#006a73"><link rel="apple-touch-icon" sizes="180x180" href="/img/pwa/favicon.png"><link rel="icon" type="image/png" sizes="16x16" href="/img/pwa/favicon_16.png"><link rel="icon" type="image/png" sizes="32x32" href="/img/pwa/favicon_32.png"><link rel="bookmark" href="/img/pwa/favicon.png"><script>console.log(' %c Solitude %c ' + '2.0.7' + ' %c https://github.com/everfu/hexo-theme-solitude',
+    'background:#35495e ; padding: 1px; border-radius: 3px 0 0 3px;  color: #fff',
+    'background:#ff9a9a ; padding: 1px; border-radius: 0 3px 3px 0;  color: #fff',
+    'background:unset ; padding: 1px; border-radius: 0 3px 3px 0;  color: #fff')
+</script><script charset="UTF-8" id="LA_COLLECT" src="https://sdk.51.la/js-sdk-pro.min.js"></script><script src="https://sdk.51.la/perf/js-sdk-perf.min.js" crossorigin="anonymous"></script><script> LA.init({id:"{3JKkb2uqMglD1UVm}",ck:"{3JKkb2uqMglD1UVm}"})</script><link rel="stylesheet" href="/css/custom/custom.css"><link rel="stylesheet"<script>(()=>{
+        const saveToLocal = {
+            set: function setWithExpiry(key, value, ttl) {
+                if (ttl === 0)
+                    return
+                const now = new Date()
+                const expiryDay = ttl * 86400000
+                const item = {
+                    value: value,
+                    expiry: now.getTime() + expiryDay
+                }
+                localStorage.setItem(key, JSON.stringify(item))
+            },
+            get: function getWithExpiry(key) {
+                const itemStr = localStorage.getItem(key)
+    
+                if (!itemStr) {
+                    return undefined
+                }
+                const item = JSON.parse(itemStr)
+                const now = new Date()
+    
+                if (now.getTime() > item.expiry) {
+                    localStorage.removeItem(key)
+                    return undefined
+                }
+                return item.value
+            }
+        };
+        window.utils = {
+            saveToLocal: saveToLocal,
+            getCSS: (url, id = false) => new Promise((resolve, reject) => {
+              const link = document.createElement('link')
+              link.rel = 'stylesheet'
+              link.href = url
+              if (id) link.id = id
+              link.onerror = reject
+              link.onload = link.onreadystatechange = function() {
+                const loadState = this.readyState
+                if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+                link.onload = link.onreadystatechange = null
+                resolve()
+              }
+              document.head.appendChild(link)
+            }),
+            getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+              const script = document.createElement('script')
+              script.src = url
+              script.async = true
+              script.onerror = reject
+              script.onload = script.onreadystatechange = function() {
+                const loadState = this.readyState
+                if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+                script.onload = script.onreadystatechange = null
+                resolve()
+              }
+    
+              Object.keys(attr).forEach(key => {
+                script.setAttribute(key, attr[key])
+              })
+    
+              document.head.appendChild(script)
+            }),
+            addGlobalFn: (key, fn, name = false, parent = window) => {
+                const globalFn = parent.globalFn || {}
+                const keyObj = globalFn[key] || {}
+        
+                if (name && keyObj[name]) return
+        
+                name = name || Object.keys(keyObj).length
+                keyObj[name] = fn
+                globalFn[key] = keyObj
+                parent.globalFn = globalFn
+            },
+        }
+    })()</script><!-- global head--><script>const GLOBAL_CONFIG = {
+    root: '/',
+    algolia: {"appId":"7T0L3PW49B","apiKey":"edaacf4c5a9af68797f7189844538286","indexName":"...","hits":{"per_page":10}},
+    localsearch: undefined,
+    runtime: '2023-05-03 00:00:00',
+    lazyload: {
+        enable: true,
+        error: '/img/error_load.avif'
+    },
+    copyright: {"limit":50,"author":"作者: elaina","link":"链接: ","source":"来源: elaina","info":"著作权归作者所有。 商业转载请联系作者获得授权，非商业转载请注明出处。"},
+    highlight: {"limit":200,"expand":true,"copy":true,"syntax":"highlight.js"},
+    randomlink: true,
+    lang: {"theme":{"dark":"已切换至深色模式","light":"已切换至浅色模式"},"copy":{"success":"复制成功","error":"复制失败"},"backtop":"返回顶部","time":{"day":"天前","hour":"小时前","just":"刚刚","min":"分钟前","month":"个月前"},"day":" 天","f12":"开发者模式已打开，请遵循GPL协议。","totalk":"无需删除空行，直接输入评论即可","search":{"empty":"找不到你查询的内容：${query}","hit":"找到 ${hits} 条结果，用时 ${time} 毫秒","placeholder":"输入关键词快速查找","count":"共 <b>${count}</b> 条结果。"}},
+    aside: {
+        sayhello: {
+            morning: "✨ Good morning. It's a new day",
+            noon: "吃的好才有动力工作",
+            afternoon: "Tea time. 🍵",
+            night: "early bedtime",
+            goodnight: "Good night 😴",
+        },
+        sayhello2: [],
+        sayhello3: {
+            prefix: '好久不见，',
+            back: '欢迎再次回来，',
+        },
+    },
+    covercolor: {
+        enable: true
+    },
+    comment: false,
+    lightbox: 'fancybox',
+    post_ai: false,
+    right_menu: {"mode":{"dark":"深色模式","light":"浅色模式"},"img_error":"此图片无法复制与下载"},
+    lure: false,
+    expire: false,
+};</script><!-- page-config head--><script id="config-diff">var PAGE_CONFIG = {
+    is_post: true,
+    is_page: false,
+    is_home: false,
+    page: '',
+    toc: true,
+    comment: false,
+    ai_text: false
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body id="body"><!-- universe--><canvas id="universe"></canvas><!-- background img--><!-- loading--><div id="loading-box" onclick="preloader.endLoading();" style="zoom:1"><div class="loading-bg"><img class="loading-img nolazyload" src="/img/pwa/favicon.png" alt="loading image"></div></div><script>const preloader = {
+    isLoaded: false,
+    endLoading: () => {
+        if (!preloader.isLoaded) {
+            document.getElementById('loading-box').classList.add('loaded');
+            preloader.isLoaded = true;
+        }
+    },
+    initLoading: () => {
+        document.getElementById('loading-box').classList.remove('loaded');
+        preloader.isLoaded = false;
+    },
+    removePaceDone: () => {
+        document.getElementById('body').classList = 'pace-done';
+    }
+}
+
+window.addEventListener('load', () => {
+    preloader.endLoading();
+});
+
+window.addEventListener('pjax:send', () => {
+    preloader.initLoading();
+});
+
+document.addEventListener('pjax:complete', () => {
+    preloader.endLoading();
+});
+
+setTimeout(() => {
+    preloader.endLoading();
+}, 5000);</script><!-- console--><div id="console"><div class="close-btn" onclick="sco.hideConsole()"><i class="solitude fa-solid fa-xmark"></i></div><div class="console-card-group"><div class="console-card-group-right"><div class="console-card tags" onclick="sco.hideConsole()"><div class="card-content"><div class="author-content-item-tips">标签</div><div class="author-content-item-title">寻找感兴趣的领域</div></div><div class="card-tag-cloud"><a href="/tags/orangepi/">orangepi<sup>1</sup></a></div></div><div class="console-card history" onclick="sco.hideConsole()"><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2024/08/"><span class="card-archive-list-date">2024/08</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">2</span><span class="card-archive-list-count-unit">篇</span></div></a></li></ul></div></div></div><div class="button-group"><div class="console-btn-item"><span class="darkmode_switchbutton" onclick="sco.switchDarkMode()" title="昼夜切换"><i class="solitude fa-solid fa-circle-half-stroke"></i></span></div><div class="console-btn-item" id="consoleHideAside"><span class="asideSwitch" onclick="sco.switchHideAside()" title="边栏显示控制"><i class="solitude fa-solid fa-mattress-pillow"></i></span></div></div><div class="console-mask" onclick="sco.hideConsole()"></div></div><!-- sidebar--><div id="sidebar" style="zoom: 1;"><div id="menu-mask" style="display: none;"></div><div id="sidebar-menus"><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/tags/"><div class="headline">标签</div><div class="length-num">1</div></a></div></div></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><span class="darkmode_switchbutton menu-child" onclick="sco.switchDarkMode()"><i class="solitude fa-solid fa-circle-half-stroke"></i><span>显示模式</span></span></div><div class="back-menu-list-groups"><div class="back-menu-list-group"><div class="back-menu-list-title">我的网站</div><div class="back-menu-list"><a class="back-menu-item" target="_blank" rel="noopener" href="https://wac.cool/" title="主页"><img class="nolazyload back-menu-item-icon" src="/img/pwa/favicon.png" alt="主页"><span class="back-menu-item-text">主页</span></a></div></div></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span>文库</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/"><i class="solitude  fas fa-house"></i><span>博客首页</span></a></li><li><a class="site-page child" href="/archives/"><i class="solitude  fas fa-box-archive"></i><span>文章列表</span></a></li><li><a class="site-page child" href="/categories/"><i class="solitude  fas fa-cube"></i><span>全部分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="solitude  fas fa-tags"></i><span>全部标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span>博客</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/links/"><i class="solitude  fas fa-user-group"></i><span>友链</span></a></li><li><a class="site-page child" href="/about/"><i class="solitude  fas fa-address-card"></i><span>关于</span></a></li><li><a class="site-page child" href="/essay/"><i class="solitude  fas fa-mug-hot"></i><span>即刻</span></a></li><li><a class="site-page child" href="/music/"><i class="solitude  fas fa-headphones"></i><span>音乐</span></a></li><li><a class="site-page child" href="/recentcomments/"><i class="solitude  fas fa-comment-dots"></i><span>评论</span></a></li><li><a class="site-page child" href="/message"><i class="solitude  fas fa-note-sticky"></i><span>留言</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-widget card-tags card-archives card-webinfo card-allinfo"><div class="card-tag-cloud"><a href="/tags/orangepi/">orangepi<sup>1</sup></a></div></div></div></div><!-- keyboard--><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav class="show" id="nav"><div id="nav-group"><div id="blog_name"><div class="back-home-button" tabindex="-1"><i class="back-home-button-icon solitude fab fa-squarespace"></i><div class="back-menu-list-groups"><div class="back-menu-list-group"><div class="back-menu-list-title">我的网站</div><div class="back-menu-list"><a class="back-menu-item" target="_blank" rel="noopener" href="https://wac.cool/" title="主页"><img class="nolazyload back-menu-item-icon" src="/img/pwa/favicon.png" alt="主页"><span class="back-menu-item-text">主页</span></a></div></div></div></div><a id="site-name" href="/" title="返回博客主页"><span class="title">elaina</span><i class="solitude fa-solid fa-home"></i></a></div><div id="page-name-mask"><div id="page-name"><a id="page-name-text" onclick="sco.toTop()">OrangePi搭建QQ机器人</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span>文库</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/"><i class="solitude  fas fa-house"></i><span>博客首页</span></a></li><li><a class="site-page child" href="/archives/"><i class="solitude  fas fa-box-archive"></i><span>文章列表</span></a></li><li><a class="site-page child" href="/categories/"><i class="solitude  fas fa-cube"></i><span>全部分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="solitude  fas fa-tags"></i><span>全部标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span>博客</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/links/"><i class="solitude  fas fa-user-group"></i><span>友链</span></a></li><li><a class="site-page child" href="/about/"><i class="solitude  fas fa-address-card"></i><span>关于</span></a></li><li><a class="site-page child" href="/essay/"><i class="solitude  fas fa-mug-hot"></i><span>即刻</span></a></li><li><a class="site-page child" href="/music/"><i class="solitude  fas fa-headphones"></i><span>音乐</span></a></li><li><a class="site-page child" href="/recentcomments/"><i class="solitude  fas fa-comment-dots"></i><span>评论</span></a></li><li><a class="site-page child" href="/message"><i class="solitude  fas fa-note-sticky"></i><span>留言</span></a></li></ul></div></div></div><div id="nav-left"></div><div id="nav-right"><div class="nav-button" id="travellings_button"><a class="site-page" target="_blank" rel="noopener" href="https://www.travellings.cn/go.html" title=""><i class="solitude fas fa-train"></i></a></div><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机一篇文章" href="javascript:void(0);"><i class="solitude fa-solid fa-dice-d6"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索"><i class="solitude fa-solid fa-magnifying-glass"></i></a></div><div class="nav-button" id="nav-console"><a class="console_switchbutton" onclick="sco.showConsole()" title="中控台" href="javascript:void(0);"><label><i class="left"></i><i class="center"></i><i class="right"></i></label></a></div><div class="nav-button" id="nav-totop" onclick="sco.toTop()"><a class="totopbtn"><i class="solitude fa-solid fa-arrow-up"></i><span id="percent">0</span></a></div><div id="toggle-menu"><a class="site-page"><i class="solitude fa-solid fa-bars"></i></a></div></div></div></nav><div class="coverdiv" id="coverdiv"><img class="nolazyload" id="post-cover" src="https://cdn.jsdelivr.net/npm/ashenwitch/orangepi.jpg" alt="OrangePi搭建QQ机器人"></div><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original" title="该文章为原创文章，注意版权协议">原创</a><span class="post-meta-categories"><a class="post-meta-categories" href="/categories/%E6%95%99%E7%A8%8B/">教程</a></span><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/orangepi/"><span class="tags-name tags-punctuation"><i class="solitude fa-solid fa-hashtag"></i>orangepi</span></a></div></div></div></div><h1 class="post-title">OrangePi搭建QQ机器人</h1><div id="post-meta"><div class="meta-secondline"><span class="post-meta-date" title="发布于 2024-08-13 21:00:00"><i class="post-meta-icon solitude fa-solid fa-calendar-days"></i><time datetime="2024-08-13T13:00:00.000Z">2024-08-13T13:00:00.000Z</time></span><span class="post-meta-date" title="最后更新于 2024-08-13 21:56:28"><i class="post-meta-icon solitude fa-solid fa-arrow-rotate-right"></i><time datetime="2024-08-13T13:56:28.814Z">2024-08-13T13:56:28.814Z</time></span><span class="post-meta-wordcount"><span class="post-meta-separator"></span></span><a class="post-meta-pv" href="/posts/orangepi/" title="文章热度"><i class="post-meta-icon solitude fa-solid fa-fire-flame-curved"></i></a></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>为什么选择开发板，因为便宜，但也有坏处，就是容易坏<br>接下来你需要准备的有</p>
+<ul>
+<li>orangepi 我的型号为orangepi zero 3</li>
+<li>orangepi电源 选<strong>美规</strong></li>
+<li>网线可选可不选</li>
+<li>一张sd卡 我的为铠侠g2 64G</li>
+<li>读卡器 我的为联想USB3.0二合一读卡器</li>
+</ul>
+<h1 id="给香橙派装系统"><a href="#给香橙派装系统" class="headerlink" title="给香橙派装系统"></a>给香橙派装系统</h1><p>去官网下载对应的镜像，<a target="_blank" rel="noopener" href="http://www.orangepi.cn/html/hardWare/computerAndMicrocontrollers/service-and-support/Orange-Pi-Zero-3.html">香橙派zero3</a>，我这里下载的是<code>Orangepizero3_1.0.2_ubuntu_jammy_server_linux6.1.31.7z</code>把它解压出来，得到<code>Orangepizero3_1.0.2_ubuntu_jammy_server_linux6.1.31.img</code>把sd卡插进读卡器插入电脑的USB接口写入镜像，我这里用的是<a target="_blank" rel="noopener" href="https://etcher.balena.io/">balenaetcher</a><br>使用管理员模式打开balenaetcher.exe，选择从文件烧录，选择磁盘后点击<strong>立即烧录</strong>，时间可能会很长，耐心等待… </p>
+<h1 id="香橙派，启动！"><a href="#香橙派，启动！" class="headerlink" title="香橙派，启动！"></a>香橙派，启动！</h1><p>将刚刚烧录好的sd卡插入卡槽，插上网线，插上电源，此时你会看到一个<strong>红色</strong>的小灯，等待颜色变成<strong>黄色</strong>就说明系统已经安装好了，这时进入路由器后台，查看路由器给香橙派分配的ip，使用ssh进行远程连接</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ssh root@192.168.0.3</span><br></pre></td></tr></table></figure>
+<p>默认密码为<strong>orangepi</strong></p>
+<h1 id="安装nonebot和koishi"><a href="#安装nonebot和koishi" class="headerlink" title="安装nonebot和koishi"></a>安装nonebot和koishi</h1><p>首先更新一下软件包列表</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt update &amp;&amp; sudo apt upgrade</span><br></pre></td></tr></table></figure>
+<p>接下来安装所需环境</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install python3.10 python3-pip python3.10-venv</span><br></pre></td></tr></table></figure>
+<p>安装pipx</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">python -m pip install --user pipx</span><br><span class="line">python -m pipx ensurepath</span><br></pre></td></tr></table></figure>
+<p>安装nonebot</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pipx install nb-cli</span><br></pre></td></tr></table></figure>
+<p>接下来跟着nb的文档走就行了 <a target="_blank" rel="noopener" href="https://nonebot.dev/docs/quick-start">nonebot文档</a><br>这里我们选择QQ适配器<code>❯ ● QQ (QQ 官方机器人)</code></p>
+<p>驱动器我们选择<code>websockets</code>和<code>HTTPX</code></p>
+<p>然后我们得到了一个文件夹，文件夹的名称就是刚刚项目的名称结构如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">├── elaina</span><br><span class="line">│   ├── pyproject.toml</span><br><span class="line">│   └── README.md</span><br></pre></td></tr></table></figure>
+<p><strong>编辑</strong>.env.prod</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">ENVIRONMENT=dev</span><br><span class="line">DRIVER=~httpx+~websockets </span><br><span class="line">QQ_IS_SANDBOX=false </span><br><span class="line">COMMAND_START=[&quot;/&quot;] </span><br><span class="line">LOG_LEVEL=DEBUG</span><br><span class="line">QQ_BOTS=&#x27; </span><br><span class="line">[</span><br><span class="line">    &#123;</span><br><span class="line">    &quot;id&quot;: &quot;&quot;,</span><br><span class="line">    &quot;token&quot;: &quot;&quot;,</span><br><span class="line">    &quot;secret&quot;: &quot;&quot;,</span><br><span class="line">        &quot;intent&quot;:&#123;</span><br><span class="line">            &quot;c2c_group_at_messages&quot;:true</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]&#x27;</span><br></pre></td></tr></table></figure>
+<p>我们需要在<strong>QQ开放平台</strong>注册机器人，将<code>appid</code> <code>token</code> <code>secret</code>填入</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nb run --reload</span><br></pre></td></tr></table></figure>
+<p>测试连接<code>@bot /echo hello world！</code></p>
+<h1 id="安装koishi"><a href="#安装koishi" class="headerlink" title="安装koishi"></a>安装koishi</h1><p>首先安装<strong>docker</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl https://install.1panel.live/docker-install -o docker-install &amp;&amp; sudo bash ./docker-install &amp;&amp; rm -f ./docker-install</span><br></pre></td></tr></table></figure>
+<p>接下来安装koishi <a target="_blank" rel="noopener" href="https://koishi.chat/zh-CN/manual/starter/docker.html">koishi官网</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -p 5140:5140 koishijs/koishi</span><br></pre></td></tr></table></figure>
+<p>安装结束进入面板</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://宿主机地址:5140</span><br></pre></td></tr></table></figure>
+<p>配置plugin-adapter-qq插件<br>点右上角的小三角启动插件<br>测试连接<code>@bot help</code></p>
+</article><div class="post-copyright"><div class="post-copyright__author_group"><a class="post-copyright__author_img" href="/about/"><img class="post-copyright__author_img_front" src="/img/pwa/favicon.png"></a><div class="post-copyright__author_name">elaina</div><div class="post-copyright__author_desc"></div></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div id="quit-box" onclick="RemoveRewardMask()"></div><div class="post-reward"><div class="reward-button" title="赞赏作者" onclick="AddRewardMask()"><i class="solitude fa-solid fa-heart"></i>赞赏作者</div><div class="reward-main"><ul class="reward-all"><span class="reward-title">感谢您的支持</span><ul class="reward-group"><li class="reward-item"><a target="_blank" rel="noopener" href="https://cdn.jsdelivr.net/npm/ashenwitch/zfb.jpg"><img class="post-qr-code-img nolazyload" src="https://cdn.jsdelivr.net/npm/ashenwitch/zfb.jpg" alt="支付宝" style="border-color: var(--efu-black)"></a><div class="post-qr-code-desc">支付宝</div></li></ul><a class="reward-main-btn" href="/about/"><div class="reward-text">赞赏名单</div><div class="reward-dec">因为有你们的支持 我才体会到写文章的价值</div></a></ul></div></div><script>function RemoveRewardMask() {
+    let rewardMainElements = document.querySelectorAll(".reward-main");
+    let quitBoxElement = document.querySelector("#quit-box");
+
+    rewardMainElements.forEach(element => {
+        element.style.display = "none";
+    });
+
+    if (quitBoxElement) {
+        quitBoxElement.style.display = "none";
+    }
+}
+
+function AddRewardMask() {
+    let rewardMainElements = document.querySelectorAll(".reward-main");
+    let quitBoxElement = document.querySelector("#quit-box");
+
+    rewardMainElements.forEach(element => {
+        element.style.display = "flex";
+    });
+
+    if (quitBoxElement) {
+        quitBoxElement.style.display = "flex";
+    }
+}</script></div></div><div class="social-share"></div><div class="post-copyright__notice"><span class="post-copyright-info">本文是原创文章，采用<a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">CC BY-NC-SA 4.0</a>协议，完整转载请注明来自<a href="/">elaina</a></span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/orangepi/"><span class="tags-punctuation"><i class="solitude fa-solid fa-hashtag"></i>orangepi<span class="tagsPageCount">1</span></span></a></div></div></div><nav class="needEndHide pagination-post" id="pagination"><div class="prev-post pull-full"><a href="/posts/hello/"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Hello World</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="card-info-avatar is-center"><div class="author-info__top-group"><div class="author-info__sayhi" id="author-info__sayhi" onclick="sco.changeSayHelloText()">sayhello.morning</div></div></div><div class="avatar-img-group"><img class="avatar-img" alt="头像" src="/img/pwa/favicon.png"></div><div class="author-info__description_group"><div class="author-info__description">Don't wait for someone to bring you flowers.</div><div class="author-info__description2">Plant your own garden and decorate your own soul.</div></div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" href="/about/"><div class="author-info__name">elaina</div><div class="author-info__desc"></div></a><div class="card-info-social-icons is-center"><a class="social-icon" target="_blank" rel="noopener" href="https://github.com/unenter" title="Github"><i class="solitude  fab fa-github"></i></a><a class="social-icon" target="_blank" rel="noopener" href="https://space.bilibili.com/694960998" title="Bilibili"><i class="solitude  fab fa-bilibili"></i></a></div></div></div></div><div class="card-widget card-digit-clock" id="card-digit-clock"><div class="item-headline"><i></i><span></span></div><div class="item-content"><script defer async pjax src='/js/custom/digit-clock.js'></script></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="solitude fa-solid fa-bars"></i><span>文章目录</span></div><div class="toc-content" id="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-text">前言</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%99%E9%A6%99%E6%A9%99%E6%B4%BE%E8%A3%85%E7%B3%BB%E7%BB%9F"><span class="toc-text">给香橙派装系统</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%A6%99%E6%A9%99%E6%B4%BE%EF%BC%8C%E5%90%AF%E5%8A%A8%EF%BC%81"><span class="toc-text">香橙派，启动！</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85nonebot%E5%92%8Ckoishi"><span class="toc-text">安装nonebot和koishi</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85koishi"><span class="toc-text">安装koishi</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="solitude fa-solid fa-map"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/hello/" title="Hello World"><img alt="Hello World" src="/img/default.avif"></a><div class="content"><span class="title" href="/posts/hello/" title="Hello World">Hello World</span></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/orangepi/" title="OrangePi搭建QQ机器人"><img alt="OrangePi搭建QQ机器人" src="https://cdn.jsdelivr.net/npm/ashenwitch/orangepi.jpg"></a><div class="content"><span class="title" href="/posts/orangepi/" title="OrangePi搭建QQ机器人">OrangePi搭建QQ机器人</span><span class="article-recent_post_categories" href="/posts/orangepi/">教程</span></div></div></div></div></div></div></main><footer id="footer"><div id="st-footer-bar"><div class="footer-logo"><span>elaina</span></div><div class="footer-bar-description">Articles from elaina</div><a class="footer-bar-link" href="/about/">Learn more</a></div><div id="footer_deal"><a class="deal_link" target="_blank" rel="noopener" href="https://github.com/unenter" title="Github"><i class="solitude  fab fa-github"></i></a><a class="deal_link" href="mailto:breadeggs@hotmail.com" title="Mail"><i class="solitude  fas fa-light fa-envelope"></i></a><div class="nolazyload footer_mini_logo" id="footer_mini_logo" title="返回顶部" onclick="sco.toTop()"><img src= "/img/loading.avif" data-lazy-src="/img/pwa/favicon.png" alt="返回顶部"></div><a class="deal_link" target="_blank" rel="noopener" href="https://space.bilibili.com/694960998" title="Bilibili"><i class="solitude  fab fa-bilibili"></i></a><a class="deal_link" target="_blank" rel="noopener" href="https://y.music.163.com/m/user?id=5112221303" title="NeteaseCloudMusic"><i class="solitude  fas fa-music"></i></a></div><div id="st-footer"><div class="footer-group"><h3 class="footer-title">导航</h3><div class="footer-links"><a class="footer-item" href="/archives/" title="归档">归档</a><a class="footer-item" href="/categories/" title="分类">分类</a><a class="footer-item" href="/tags/" title="标签">标签</a><a class="footer-item" href="/links/" title="友链">友链</a></div></div><div class="footer-group"><h3 class="footer-title">服务</h3><div class="footer-links"><a class="footer-item" target="_blank" rel="noopener" href="https://aliyun.com/" title="阿里云">阿里云</a><a class="footer-item" target="_blank" rel="noopener" href="https://vercel.com/" title="vercel">vercel</a><a class="footer-item" target="_blank" rel="noopener" href="https://counter.dev/" title="counter">counter</a></div></div><div class="footer-group"><h3 class="footer-title">博客</h3><div class="footer-links"><a class="footer-item" target="_blank" rel="noopener" href="https://hexo.io/" title="hexo">hexo</a><a class="footer-item" target="_blank" rel="noopener" href="https://github.com/" title="github">github</a><a class="footer-item" target="_blank" rel="noopener" href="https://twikoo.js.org/" title="twikoo">twikoo</a><a class="footer-item" target="_blank" rel="noopener" href="https://github.com/everfu/hexo-theme-solitude" title="solitude">solitude</a></div></div><div class="footer-group"><h3 class="footer-title">协议</h3><div class="footer-links"><a class="footer-item" href="/cookies/" title="Cookies">Cookies</a><a class="footer-item" href="/privacy/" title="隐私协议">隐私协议</a><a class="footer-item" href="/copyright/" title="版权协议">版权协议</a></div></div><div class="footer-group"><div class="footer-title-group"><h3 class="footer-title">友链</h3><button class="random-friends-btn" onclick="randomLinksList()" title="友链"><i class="solitude fa-solid fa-arrows-rotate"></i></button></div><div class="footer-links" id="friend-links-in-footer"></div></div></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div class="copyright">© 2023 - 2024 By&nbsp;<a class="footer-bar-link" href="/">elaina</a></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://icp.gov.moe/?keyword=20240283" alt="萌ICP备20240002">萌ICP备20240002</a></div></div></div></footer></div><!-- right_menu--><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="solitude fa-solid fa-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="solitude fa-solid fa-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="solitude fa-solid fa-arrow-rotate-right"></i></div><div class="rightMenu-item" id="menu-top"><i class="solitude fa-solid fa-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="solitude fa-solid fa-clone"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="solitude fa-solid fa-clipboard"></i><span>粘贴文本</span></div><div class="rightMenu-item" id="menu-newwindow"><i class="solitude fa-regular fa-window-maximize"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="solitude fa-solid fa-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="solitude fa-solid fa-clone"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="solitude fa-solid fa-cloud-arrow-down"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-search"><i class="solitude fa-solid fa-magnifying-glass"></i><span>站内搜索</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"></div><div class="rightMenu-group rightMenu-line rightMenuOther"><div class="rightMenu-item" id="menu-darkmode" onclick="sco.switchDarkMode()"><i class="solitude fa-solid fa-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></div></div></div><div id="rightmenu-mask"></div><!-- inject body--><div><script src="/js/utils.js?v=2.0.7"></script><script src="/js/main.js?v=2.0.7"></script><script src="/js/third_party/waterfall.min.js?v=2.0.7"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pjax/0.2.8/pjax.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script><script src="/js/third_party/universe.min.js?v=2.0.7"></script><script>dark()
+</script><script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-lazyload/19.1.3/lazyload.iife.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/node-snackbar/0.1.16/snackbar.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.36/fancybox/fancybox.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.js"></script><script>var meting_api = 'https://meting.qjqq.cn/?server=:server&type=:type&id=:id&auth=:auth&r=:r';</script><script src="https://cdnjs.cloudflare.com/ajax/libs/aplayer/1.10.1/APlayer.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/meting/2.0.1/Meting.min.js"></script><script src="/js/covercolor/local.js?v=2.0.7"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/instantsearch.js/4.73.3/instantsearch.production.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/algoliasearch/4.24.0/algoliasearch-lite.umd.min.js"></script><script src="/js/right_menu.js?v=2.0.7"></script><script defer pjax src="/js/custom.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.js"></script><div class="js-pjax"><script>mermaid.run();</script></div></div><script>const links = [{"name":"HiPeach","link":"https://blog.opeach.cn"}]
+const randomText = '点击前往按钮进入随机一个友链，不保证跳转网站的安全性和可用性。本次随机到的是本站友链：⌈ ${name} ⌋'
+function travelling() {
+    const link = links[utils.randomNum(links.length)];
+    Snackbar.show({
+        text: randomText.replace(/\$\{name}/,link.name),
+        duration: 8000,
+        pos: 'top-center',
+        actionText: '前往',
+        onActionClick: function(element) {
+            element.style.opacity = 0;
+            window.open(link.link, '_blank');
+        }
+    });
+}
+</script><script>function randomLinksList() {
+    const linkcard = document.getElementById('friend-links-in-footer');
+    if (linkcard == null) return;
+
+    let data = '';
+    let linksCopy = [...links];
+    let count = Math.min(3, linksCopy.length);
+
+    for (let i = 0; i < count; i++) {
+        let index = utils.randomNum(linksCopy.length);
+        const {link, name} = linksCopy[index];
+        data += `<a class="footer-item" href="${link}" target="_blank" rel="noopener noreferrer nofollow">${name}</a>`;
+        linksCopy.splice(index, 1);
+    }
+
+    linkcard.innerHTML = data + '<a class="footer-item" href="/links/">更多</a>';
+}</script><!-- pjax--><script>const pjax = new Pjax({
+    elements: 'a:not([target="_blank"])',
+    selectors: ['title','#body-wrap','#site-config','meta[name="description"]','.js-pjax','meta[property^="og:"]','#config-diff'],
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+})
+
+document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+})
+
+document.addEventListener('pjax:complete', () => {
+    window.refreshFn()
+
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+        const newScript = document.createElement('script')
+        const content = item.text || item.textContent || item.innerHTML || ""
+        Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+        newScript.appendChild(document.createTextNode(content))
+        item.parentNode.replaceChild(newScript, item)
+    })
+
+    GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+})
+
+document.addEventListener('pjax:error', (e) => {
+    if (e.request.status === 404) {
+        pjax.loadUrl('/404.html')
+    }
+})</script><!-- theme--><script>initTheme = () => {
+    let isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const cachedMode = utils.saveToLocal.get('theme');
+    if (cachedMode === undefined) {
+        const nowMode =
+            isDarkMode ? 'dark' : 'light'
+        document.documentElement.setAttribute('data-theme', nowMode);
+    } else {
+        document.documentElement.setAttribute('data-theme', cachedMode);
+    }
+    typeof rm === 'object' && rm.mode(cachedMode === 'dark' && isDarkMode)
+}
+initTheme()</script><!-- google adsense--><!-- search--><div id="algolia-search"><div class="search-dialog"><div class="algolia-navbar"><div class="search-dialog__title" id="algolia-search-title">搜索</div><span class="search-close-button"><i class="solitude fa-solid fa-xmark"></i></span></div><div id="algolia-input-panel"><div id="algolia-search-input"></div></div><div id="search-results"><div id="algolia-hits"></div></div><div id="algolia-tips"><div id="algolia-pagination"></div><div id="algolia-stats"></div></div></div><div id="search-mask"></div></div><script src="/js/search/algolia.js?v=2.0.7"></script><!-- Tianli-Talk--><!-- music--></body></html><script>const posts=["posts/hello/","posts/orangepi/"];function toRandomPost(){ pjax.loadUrl(GLOBAL_CONFIG.root+posts[Math.floor(Math.random()*posts.length)]); }</script>
