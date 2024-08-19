@@ -2302,6 +2302,12 @@ span.tags-punctuation i {
   border-width: 0;
   border-top: 1px dashed var(--efu-theme-op);
 }
+.medium-zoom--opened .medium-zoom-overlay {
+  z-index: 10;
+}
+.medium-zoom-image--opened {
+  z-index: 11;
+}
 .article-sort-title {
   font-weight: 700;
   font-size: 2em;
@@ -4807,6 +4813,66 @@ span.tags-punctuation i {
   #nav-console {
     display: none;
   }
+}
+#keyboard-tips {
+  position: fixed;
+  top: 80px;
+  left: 20px;
+  z-index: 999;
+  background: var(--efu-maskbgdeep);
+  border-radius: 12px;
+  border: var(--style-border);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: saturate(180%) blur(20px);
+  transform: translateZ(0);
+  pointer-events: none;
+  box-shadow: var(--efu-shadow-border);
+  opacity: 0;
+  transition: 0.3s;
+}
+#keyboard-tips.show {
+  opacity: 1;
+  transition: 0.1s;
+}
+#keyboard-tips .keyboardTitle {
+  font-size: 12px;
+  color: var(--efu-secondtext);
+  line-height: 1;
+}
+#keyboard-tips .keyboardList {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+#keyboard-tips .keyboardItem {
+  display: flex;
+  margin-top: 4px;
+}
+#keyboard-tips .keyGroup {
+  display: flex;
+  align-items: center;
+  width: 90px;
+}
+#keyboard-tips .keyGroup .key {
+  padding: 0.2em 0.4em;
+  font-family: inherit;
+  background-color: var(--efu-card-bg);
+  color: var(--efu-fontcolor);
+  border: var(--style-border);
+  border-color: var(--efu-secondtext);
+  border-bottom: 2px solid var(--efu-secondtext);
+  box-shadow: var(--efu-shadow-border);
+  border-radius: 0.25rem;
+  overflow-wrap: break-word;
+  overflow-x: auto;
+  font-weight: 500;
+  font-size: 0.875em;
+  margin-right: 4px;
+  vertical-align: baseline;
+  line-height: 1;
+  height: 24px;
 }
 span.tags-punctuation {
   display: flex;
