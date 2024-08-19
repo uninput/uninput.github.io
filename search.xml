@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search> 
+  
+  
+    
+    <entry>
+      <title>Hello World</title>
+      <link href="/posts/hello/"/>
+      <url>/posts/hello/</url>
+      
+        <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]></content>
+      
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>OrangePi搭建QQ机器人</title>
+      <link href="/posts/orangepi/"/>
+      <url>/posts/orangepi/</url>
+      
+        <content type="html"><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>为什么选择开发板，因为便宜，但也有坏处，就是容易坏<br>接下来你需要准备的有</p><ul><li>orangepi 我的型号为orangepi zero 3</li><li>orangepi电源 选<strong>美规</strong></li><li>网线可选可不选</li><li>一张sd卡 我的为铠侠g2 64G</li><li>读卡器 我的为联想USB3.0二合一读卡器</li></ul><h1 id="给香橙派装系统"><a href="#给香橙派装系统" class="headerlink" title="给香橙派装系统"></a>给香橙派装系统</h1><p>去官网下载对应的镜像，<a href="http://www.orangepi.cn/html/hardWare/computerAndMicrocontrollers/service-and-support/Orange-Pi-Zero-3.html">香橙派zero3</a>，我这里下载的是<code>Orangepizero3_1.0.2_ubuntu_jammy_server_linux6.1.31.7z</code>把它解压出来，得到<code>Orangepizero3_1.0.2_ubuntu_jammy_server_linux6.1.31.img</code>把sd卡插进读卡器插入电脑的USB接口写入镜像，我这里用的是<a href="https://etcher.balena.io/">balenaetcher</a><br>使用管理员模式打开balenaetcher.exe，选择从文件烧录，选择磁盘后点击<strong>立即烧录</strong>，时间可能会很长，耐心等待…<br><img src="https://cdn.jsdelivr.net/npm/ashenwitch/balenaetcher.png" alt="balenaetcher" title="balenaetcher"></p><h1 id="香橙派，启动！"><a href="#香橙派，启动！" class="headerlink" title="香橙派，启动！"></a>香橙派，启动！</h1><p>将刚刚烧录好的sd卡插入卡槽，插上网线，插上电源，此时你会看到一个<strong>红色</strong>的小灯，等待颜色变成<strong>黄色</strong>就说明系统已经安装好了，这时进入路由器后台，查看路由器给香橙派分配的ip，使用ssh进行远程连接</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ssh root@192.168.0.3</span><br></pre></td></tr></table></figure><p>默认密码为<strong>orangepi</strong></p><h1 id="安装nonebot"><a href="#安装nonebot" class="headerlink" title="安装nonebot"></a>安装nonebot</h1><p>首先更新一下软件包列表</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt update &amp;&amp; sudo apt upgrade</span><br></pre></td></tr></table></figure><p>接下来安装所需环境</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install python3.10 python3-pip python3.10-venv</span><br></pre></td></tr></table></figure><p>安装pipx</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">python -m pip install --user pipx</span><br><span class="line">python -m pipx ensurepath</span><br></pre></td></tr></table></figure><p>安装nonebot</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pipx install nb-cli</span><br></pre></td></tr></table></figure><p>接下来跟着nb的文档走就行了 <a href="https://nonebot.dev/docs/quick-start">nonebot文档</a><br>这里我们选择QQ适配器<code>❯ ● QQ (QQ 官方机器人)</code></p><p>驱动器我们选择<code>websockets</code>和<code>HTTPX</code></p><p>然后我们得到了一个文件夹，文件夹的名称就是刚刚项目的名称结构如下</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">elaina</span><br><span class="line">├── .env.prod</span><br><span class="line">├── pyproject.toml</span><br><span class="line">└── README.md</span><br></pre></td></tr></table></figure><p><strong>编辑</strong>.env.prod</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">ENVIRONMENT=dev</span><br><span class="line">DRIVER=~httpx+~websockets </span><br><span class="line">QQ_IS_SANDBOX=false </span><br><span class="line">COMMAND_START=[&quot;/&quot;] </span><br><span class="line">LOG_LEVEL=DEBUG</span><br><span class="line">QQ_BOTS=&#x27; </span><br><span class="line">[</span><br><span class="line">    &#123;</span><br><span class="line">    &quot;id&quot;: &quot;&quot;,</span><br><span class="line">    &quot;token&quot;: &quot;&quot;,</span><br><span class="line">    &quot;secret&quot;: &quot;&quot;,</span><br><span class="line">        &quot;intent&quot;:&#123;</span><br><span class="line">            &quot;c2c_group_at_messages&quot;:true</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]&#x27;</span><br></pre></td></tr></table></figure><p>我们需要在<strong>QQ开放平台</strong>注册机器人，将<code>appid</code> <code>token</code> <code>secret</code>填入</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nb run --reload</span><br></pre></td></tr></table></figure><p>测试连接<code>@bot /echo hello world！</code></p><h1 id="安装koishi"><a href="#安装koishi" class="headerlink" title="安装koishi"></a>安装koishi</h1><p>首先安装<strong>docker</strong></p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl https://install.1panel.live/docker-install -o docker-install &amp;&amp; sudo bash ./docker-install &amp;&amp; rm -f ./docker-install</span><br></pre></td></tr></table></figure><p>接下来安装koishi <a href="https://koishi.chat/zh-CN/manual/starter/docker.html">koishi官网</a></p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -p 5140:5140 koishijs/koishi</span><br></pre></td></tr></table></figure><p>安装结束进入面板</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://宿主机地址:5140</span><br></pre></td></tr></table></figure><p>配置plugin-adapter-qq插件<br>点右上角的小三角启动插件<br>测试连接<code>@bot help</code></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 教程 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> orangepi </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+  
+  
+</search>
