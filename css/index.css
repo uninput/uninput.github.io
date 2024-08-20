@@ -1,3 +1,81 @@
+.red {
+  color: var(--efu-red);
+}
+.green {
+  color: var(--efu-green);
+}
+.blue {
+  color: var(--efu-blue);
+}
+.yellow {
+  color: var(--efu-yellow);
+}
+.pink {
+  color: var(--efu-pink);
+}
+.purple {
+  color: var(--efu-purple);
+}
+.orange {
+  color: var(--efu-orange);
+}
+.bg-red {
+  background-color: var(--efu-red);
+  color: var(--efu-white);
+}
+.bg-green {
+  background-color: var(--efu-green);
+  color: var(--efu-white);
+}
+.bg-blue {
+  background-color: var(--efu-blue);
+  color: var(--efu-white);
+}
+.bg-yellow {
+  background-color: var(--efu-yellow);
+}
+.bg-pink {
+  background-color: var(--efu-pink);
+  color: var(--efu-white);
+}
+.bg-purple {
+  background-color: var(--efu-purple);
+  color: var(--efu-white);
+}
+.bg-orange {
+  background-color: var(--efu-orange);
+  color: var(--efu-white);
+}
+.block {
+  display: block;
+}
+.center {
+  margin: 0 auto;
+}
+.right {
+  margin-left: auto;
+}
+.larger {
+  font-size: 1.5rem;
+  margin: 5px;
+}
+.larger i {
+  transform: scale(1.5);
+}
+.video-container {
+  display: flex;
+  justify-content: center;
+}
+.video-container iframe {
+  width: 80%;
+  height: 400px;
+}
+@media screen and (max-width: 768px) {
+  .video-container iframe {
+    width: 100%;
+    height: 200px;
+  }
+}
 @charset "UTF-8";
 @keyframes snackbar-progress{0%{width:0}to{width:100%}}.snackbar-container{transition:.5s;font-size:14px;position:fixed;align-items:center;line-height:22px;padding:18px 24px;bottom:-100px;top:-100px;opacity:0;z-index:9999;background:var(--efu-lighttext)!important;color:var(--efu-card-bg);border-radius:0;display:flex;justify-content:center;max-width:none;min-width:100%;margin:0;left:0;height:60px;transform:none}.snackbar-container p{color:var(--efu-card-bg)!important;font-weight:700!important;text-align:center;font-size:.8rem!important;display:flex;justify-content:center}.snackbar-container .action{display:inline-block;font-size:inherit;margin:0 0 0 24px;min-width:min-content;cursor:pointer;color:var(--efu-card-bg)!important;background:var(--efu-lighttext)!important;padding:4px 6px;font-weight:700;border-radius:8px;transition:.3s;border:var(--style-border)}.snackbar-container .action:hover{background:var(--efu-card-bg)!important;color:var(--efu-lighttext)!important}.snackbar-container:after{position:absolute;width:0;height:100%;left:0;top:0;background:var(--efu-white);opacity:.1;content:"";animation:snackbar-progress var(--efu-snackbar-time) linear forwards;pointer-events:none}.snackbar-pos.top-center,.snackbar-pos.top-left{bottom:auto;top:0;left:0}.snackbar-pos.top-right{bottom:auto;top:0;right:0}
 @media screen and (min-width: 768px) {
@@ -3155,6 +3233,210 @@ span.tags-punctuation i {
   font-size: 12px;
   color: var(--efu-secondtext);
   margin-top: auto;
+}
+#nav-music {
+  display: flex;
+  align-items: center;
+  z-index: 8;
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  cursor: pointer;
+  transition: 0.3s;
+  transform-origin: left bottom;
+  box-shadow: var(--efu-shadow-border);
+  border-radius: 40px;
+  overflow: hidden;
+  user-select: none;
+}
+@media screen and (max-width: 798px) {
+  #nav-music {
+    display: none !important;
+  }
+}
+#nav-music span {
+  user-select: none;
+}
+#nav-music div {
+  user-select: none;
+}
+#nav-music.playing {
+  box-shadow: 0 0 12px -3px var(--efu-none);
+  -webkit-animation: playingShadow 5s linear infinite;
+}
+#nav-music.playing .aplayer {
+  background: var(--efu-main-op-deep);
+  border: var(--style-border-hover);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transform: translateZ(0);
+}
+#nav-music.playing .aplayer.aplayer-withlrc .aplayer-pic {
+  box-shadow: 0 0 14px rgba(255,255,255,0.651);
+  -webkit-transform: rotate(0) scale(1.1);
+  border-color: var(--efu-white);
+  animation-play-state: running;
+}
+#nav-music.playing .aplayer.aplayer-withlrc .aplayer-info {
+  color: var(--efu-white);
+}
+#nav-music.playing .aplayer.aplayer-withlrc .aplayer-lrc {
+  width: 200px;
+  margin-bottom: 0;
+  opacity: 1;
+}
+#nav-music.playing .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar {
+  opacity: 1;
+}
+#nav-music.playing .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar .aplayer-played {
+  animation-play-state: running;
+}
+#nav-music.playing #nav-music-hoverTips {
+  opacity: 0;
+}
+#nav-music .aplayer {
+  background: var(--efu-card-bg);
+  border-radius: 60px;
+  height: 41px;
+  display: flex;
+  margin: 0;
+  pointer-events: none;
+  transition: 0.3s;
+  border: var(--style-border);
+  box-shadow: none;
+}
+#nav-music .aplayer.aplayer-withlrc .aplayer-pic {
+  height: 25px;
+  width: 25px;
+  border-radius: 40px;
+  z-index: 1;
+  transition: 0.3s;
+  -webkit-transform: rotate(0) scale(1);
+  border: var(--style-border-always);
+  -webkit-animation: changeright 24s linear infinite;
+  animation-play-state: paused;
+}
+#nav-music .aplayer.aplayer-withlrc .aplayer-info {
+  height: 100%;
+  color: var(--efu-fontcolor);
+  margin-left: 8px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+#nav-music .aplayer.aplayer-withlrc .aplayer-lrc {
+  width: 0;
+  opacity: 0;
+  transition: 0.3s;
+  margin-left: 8px;
+  margin-top: -2px;
+}
+#nav-music .aplayer .aplayer-notice {
+  display: none;
+}
+#nav-music .aplayer .aplayer-miniswitcher {
+  display: none;
+}
+#nav-music .aplayer .aplayer-body {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 12px 0 8px;
+}
+#nav-music .aplayer .aplayer-pic .aplayer-play {
+  opacity: 0;
+}
+#nav-music .aplayer .aplayer-pic div {
+  display: none;
+}
+#nav-music .aplayer .aplayer-info .aplayer-music {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  z-index: 1;
+}
+#nav-music .aplayer .aplayer-info .aplayer-music .aplayer-author {
+  display: none;
+}
+#nav-music .aplayer .aplayer-info .aplayer-music .aplayer-title {
+  cursor: pointer;
+  line-height: 1;
+  display: inline-block;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: 0.3s;
+}
+#nav-music .aplayer .aplayer-info .aplayer-controller {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+#nav-music .aplayer .aplayer-info .aplayer-controller .aplayer-time {
+  display: none;
+}
+#nav-music .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap {
+  margin: 0;
+  padding: 0;
+}
+#nav-music .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar {
+  height: 100%;
+  background: 0 0;
+  opacity: 0;
+}
+#nav-music .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar .aplayer-loaded {
+  display: none;
+}
+#nav-music .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar .aplayer-played {
+  height: 100%;
+  opacity: 0.1;
+  background-color: var(--efu-white) !important;
+  -webkit-animation: lightBar 5s ease infinite;
+  animation-play-state: paused;
+}
+#nav-music .aplayer.aplayer-withlist .aplayer-info {
+  border: none;
+}
+#nav-music .aplayer .aplayer-lrc p {
+  color: rgba(255,255,255,0.702);
+  filter: blur(1px);
+}
+#nav-music .aplayer .aplayer-lrc p.aplayer-lrc-current {
+  color: var(--efu-white);
+  border: none;
+  filter: blur(0);
+}
+#nav-music #nav-music-hoverTips {
+  color: var(--efu-white);
+  background: var(--efu-main);
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  border-radius: 40px;
+  opacity: 0;
+  font-size: 12px;
+  z-index: 2;
+  pointer-events: none;
+  transition: 0.3s;
+}
+#nav-music:hover:not(.playing) #nav-music-hoverTips {
+  opacity: 1;
+}
+#nav-music .aplayer-list {
+  display: none;
+}
+#nav-music .aplayer .aplayer-lrc:after,
+#nav-music .aplayer .aplayer-lrc:before {
+  display: none;
 }
 #console {
   display: flex;
@@ -10899,13 +11181,13 @@ figure.highlight .attr,
 figure.highlight .variable,
 figure.highlight .literal,
 figure.highlight .property {
-  color: #00f;
+  color: #90a4ae;
 }
 figure.highlight .number {
   color: #098658;
 }
 figure.highlight .string {
-  color: #a31515;
+  color: #91b859;
 }
 figure.highlight .built_in,
 figure.highlight .title,
