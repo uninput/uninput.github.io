@@ -10590,7 +10590,7 @@ div#banners .bannerText {
   }
 }
 [data-theme=dark] {
-  --efu-theme: #ffc848;
+  --efu-theme: #ff8c66;
   --efu-theme-op: rgba(242,185,75,0.137);
   --efu-theme-op-deep: rgba(242,185,75,0.867);
   --efu-theme-none: rgba(242,185,75,0);
@@ -10635,7 +10635,7 @@ div#banners .bannerText {
   --efu-hltools-bg: #454a50;
 }
 [data-theme=light] {
-  --efu-theme: #425aef;
+  --efu-theme: #ff8c66;
   --efu-theme-op: rgba(66,89,239,0.137);
   --efu-theme-op-deep: rgba(66,89,239,0.867);
   --efu-theme-op-light: rgba(66,89,239,0.051);
