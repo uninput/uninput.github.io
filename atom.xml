@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>elaina</title>
+  
+  
+  <link href="https://ashenwitch.top/atom.xml" rel="self"/>
+  
+  <link href="https://ashenwitch.top/"/>
+  <updated>2024-08-19T13:36:00.000Z</updated>
+  <id>https://ashenwitch.top/</id>
+  
+  <author>
+    <name>elaina</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>OrangePi搭建QQ机器人</title>
+    <link href="https://ashenwitch.top/posts/orangepi/"/>
+    <id>https://ashenwitch.top/posts/orangepi/</id>
+    <published>2024-08-13T13:00:00.000Z</published>
+    <updated>2024-08-19T13:36:00.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h1&gt;&lt;p&gt;为什么选择开发板，因为便宜，但也有坏处，就是容易坏&lt;br&gt;接下来你需要准备的有&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;orangepi</summary>
+        
+      
+    
+    
+    
+    <category term="教程" scheme="https://ashenwitch.top/categories/%E6%95%99%E7%A8%8B/"/>
+    
+    
+    <category term="orangepi" scheme="https://ashenwitch.top/tags/orangepi/"/>
+    
+  </entry>
+  
+</feed>

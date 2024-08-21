@@ -5589,8 +5589,8 @@ span.tags-punctuation {
   #recent-posts > .recent-post-item {
     flex-direction: column;
     width: 100%;
-    flex: 1 1 40%;
-    max-width: 50%;
+    flex: 1 1 33.3%;
+    max-width: 32.6%;
     box-shadow: var(--efu-shadow-border);
   }
 }
