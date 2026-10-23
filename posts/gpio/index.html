@@ -1,0 +1,421 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><title>GPIO输入输出及OLED驱动 | unenter</title><noscript>开启 JavaScript 后才能访问本站</noscript><link rel="icon" href="/img/favicon.png"><link rel="stylesheet" href="/css/index.css?v=4.0.0"><link rel="canonical" href="https://blog.unenter.cn/posts/gpio/index.html"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.0/css/all.min.css"><!-- Feature-specific CSS--><!-- aplayer--><!-- swiper--><!-- fancybox ui--><!-- katex--><!-- Open Graph--><meta name="description" content="GPIO输出输出模式 八种输出模式 说明 浮空输入 可读取引脚电平，若引脚悬空，则电平不确定 上拉输入 可读取引脚电平，内部连接上拉电阻，悬空时默认高电平 下拉输入 可读取引脚电平，内部连接下拉电阻，悬空时默认低电平 模拟输入 GPIO无效，引脚直接接入内部ADC 开漏输出"><!-- pwa--><meta name="apple-mobile-web-app-capable" content="unenter"><meta name="theme-color" content="var(--efu-main)"><meta name="apple-mobile-web-app-status-bar-style" content="var(--efu-main)"><link rel="bookmark" href="/img/favicon.png"><link rel="apple-touch-icon" href="/img/favicon.png" sizes="180x180"><script>console.log(' %c Solitude %c ' + '4.0.0' + ' %c https://github.com/everfu/hexo-theme-solitude',
+    'background:#35495e ; padding: 1px; border-radius: 3px 0 0 3px;  color: #fff',
+    'background:#ff9a9a ; padding: 1px; border-radius: 0 3px 3px 0;  color: #fff',
+    'background:unset ; padding: 1px; border-radius: 0 3px 3px 0;  color: #fff')
+</script><link rel="stylesheet" href="/css/custom.css" media="defer" onload="this.media='all'"><link rel="stylesheet" href="/css/schedule.css"><script src="https://npm.elemecdn.com/echarts@4.9.0/dist/echarts.min.js"></script><script>(()=>{
+        const parseConfig = (id) => {
+            const element = document.getElementById(id)
+            if (!element) return {}
+            try {
+                return JSON.parse(element.content?.textContent || element.textContent || '{}')
+            } catch (error) {
+                console.error('Invalid Solitude config:', error)
+                return {}
+            }
+        }
+        const saveToLocal = {
+            set: function setWithExpiry(key, value, ttl) {
+                if (ttl === 0)
+                    return
+                const now = new Date()
+                const expiryDay = ttl * 86400000
+                const item = {
+                    value: value,
+                    expiry: now.getTime() + expiryDay
+                }
+                localStorage.setItem(key, JSON.stringify(item))
+            },
+            get: function getWithExpiry(key) {
+                const itemStr = localStorage.getItem(key)
+
+                if (!itemStr) {
+                    return undefined
+                }
+                let item
+                try {
+                    item = JSON.parse(itemStr)
+                } catch (error) {
+                    localStorage.removeItem(key)
+                    return undefined
+                }
+                const now = new Date()
+
+                if (now.getTime() > item.expiry) {
+                    localStorage.removeItem(key)
+                    return undefined
+                }
+                return item.value
+            }
+        };
+        const resourceRequests = new Map()
+        const loadResource = (url, create) => {
+            const absoluteUrl = new URL(url, document.baseURI).href
+            if (resourceRequests.has(absoluteUrl)) return resourceRequests.get(absoluteUrl)
+            const request = new Promise((resolve, reject) => {
+                const element = create(absoluteUrl)
+                element.addEventListener('load', () => resolve(element), {once: true})
+                element.addEventListener('error', () => {
+                    resourceRequests.delete(absoluteUrl)
+                    reject(new Error('Unable to load ' + absoluteUrl))
+                }, {once: true})
+                document.head.appendChild(element)
+            })
+            resourceRequests.set(absoluteUrl, request)
+            return request
+        }
+        const api = window.Solitude || {}
+        window.Solitude = api
+        api.installLegacyAdapter = () => {
+            const aliases = {
+                utils: api,
+                sco: api,
+                GLOBAL_CONFIG: api.config
+            }
+            Object.entries(aliases).forEach(([name, value]) => {
+                if (name in window) return
+                Object.defineProperty(window, name, {
+                    configurable: true,
+                    enumerable: false,
+                    value
+                })
+            })
+        }
+        Object.defineProperties(api, {
+            config: {configurable: true, get: () => parseConfig('site-config')},
+            page: {configurable: true, get: () => parseConfig('config-diff')}
+        })
+        Object.assign(api, {
+            saveToLocal: saveToLocal,
+            loadStyle: (url, options = {}) => loadResource(url, href => {
+                const link = document.createElement('link')
+                link.rel = 'stylesheet'
+                link.href = href
+                if (options.id) link.id = options.id
+                return link
+            }),
+            loadScript: (url, options = {}) => {
+              if (url.includes('barrage')) api.installLegacyAdapter()
+              return loadResource(url, src => {
+                const script = document.createElement('script')
+                script.src = src
+                script.async = options.async !== false
+                Object.entries(options.attributes || {}).forEach(([key, value]) => script.setAttribute(key, value))
+                return script
+              })
+            },
+            addGlobalFn: (key, fn, name = false, parent = window) => {
+                const globalFn = parent.globalFn || {}
+                const keyObj = globalFn[key] || {}
+
+                if (name && keyObj[name]) return
+
+                name = name || Object.keys(keyObj).length
+                keyObj[name] = fn
+                globalFn[key] = keyObj
+                parent.globalFn = globalFn
+            },
+            addEventListenerPjax: (ele, event, fn, option = false) => {
+              ele.addEventListener(event, fn, option)
+              api.addGlobalFn('pjax', () => {
+                  ele.removeEventListener(event, fn, option)
+              })
+            },
+            diffDateFormat: (selector) => {
+                selector.forEach(item => {
+                    const date = new Date(item.getAttribute('datetime') || item.textContent);
+                    item.textContent = (date.getMonth() + 1).toString()+'/'+date.getDate().toString();
+                });
+            },
+        })
+        api.getCSS = (url, id = false) => api.loadStyle(url, {id})
+        api.getScript = (url, attr = {}) => api.loadScript(url, {attributes: attr})
+        api.on = (name, handler) => {
+            const eventName = 'solitude:' + name
+            document.addEventListener(eventName, handler)
+            return () => document.removeEventListener(eventName, handler)
+        }
+        api.navigate = url => api.pjax?.loadUrl ? api.pjax.loadUrl(url) : window.location.assign(url)
+    })()</script><!-- theme--><script>initTheme = () => {
+    let isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const cachedMode = Solitude.saveToLocal.get('theme');
+    if (cachedMode === undefined) {
+        const nowMode =
+            isDarkMode ? 'dark' : 'light'
+        document.documentElement.setAttribute('data-theme', nowMode);
+    } else {
+        document.documentElement.setAttribute('data-theme', cachedMode);
+    }
+    Solitude.rightMenu?.mode(cachedMode === 'dark' && isDarkMode)
+}
+initTheme()</script><template id="site-config">{"root":"/","algolia":null,"localsearch":{"preload":true,"path":"/search.xml"},"runtime":"2023-03-05 00:00:00","lazyload":{"enable":true,"error":"/img/loading.svg"},"copyright":false,"highlight":{"limit":200,"expand":true,"copy":true,"syntax":"highlight.js"},"friend_links":{"async":false,"path":"/links.json","total":5,"placeholder":"","default_avatar":"/img/default_avatar.avif","more_url":"/links/","loading":"正在加载友链…","error":"友链加载失败，请稍后重试。","retry":"重新加载","random":"点击前往按钮进入随机一个友链，不保证跳转网站的安全性和可用性。本次随机到的是本站友链：⌈ ${name} ⌋","to":"前往","more":"更多","default_sort":"默认排序","random_sort":"随机排序","sort_label":"切换排序方式","scroll_left":"向左滚动","scroll_right":"向右滚动"},"random_posts":["posts/tim/","posts/exti/","posts/gpio/","posts/orangepi/"],"randomlink":true,"feature_modules":{"search":"local","post_ai":false,"friend_links":true,"music":false,"right_menu":true,"translate":true,"covercolor":false},"lang":{"theme":{"dark":"已切换至深色模式","light":"已切换至浅色模式"},"copy":{"success":"复制成功","error":"复制失败"},"backtop":"返回顶部","time":{"day":"天前","hour":"小时前","just":"刚刚","min":"分钟前","month":"个月前"},"day":" 天","f12":"开发者模式已开启，请遵守 GPL 协议。","totalk":"无需删除空行，直接输入评论即可","search":{"empty":"找不到你查询的内容：${query}","hit":"找到 ${hits} 条结果，用时 ${time} 毫秒","placeholder":"输入关键词快速查找","count":"共 \u003cb>${count}\u003c/b> 条结果。","loading":"搜索中…"}},"aside":{"state":{"morning":"晨兴好拥向阳坐，晚出宜披踏雪行。","noon":"玉碗冰寒消暑气。碧簟纱厨，向午朦胧睡。","afternoon":"夕阳薰细草，江色映疏帘。","night":"有约不来过夜半，闲敲棋子落灯花。","goodnight":"明月不知君已去，夜深还照读书窗。"},"witty_words":["你可以的","你一定可以的","祝你好运，陌生人"],"witty_comment":{"prefix":"好久不见，","back":"欢迎回来，"}},"covercolor":{"enable":false,"mode":"local","api":"https://api.qjqq.cn/api/Imgcolor?img=","time":43200000},"comment":false,"lightbox":"mediumZoom","right_menu":{"mode":{"dark":"深色模式","light":"浅色模式"},"img_error":"此图片无法复制与下载","translate":true,"ctrlOriginalMenu":"按住 Ctrl 并单击右键，可打开浏览器右键菜单"},"translate":{"translateDelay":0,"defaultEncoding":2,"toSimplified":"转为简体","toTraditional":"转为繁体","switchedToSimplified":"已切换为简体中文","switchedToTraditional":"已切换为繁体中文"},"lure":false,"expire":false}</template><template id="config-diff">{"is_post":true,"is_page":false,"is_home":false,"page":"post","toc":true,"comment":false,"ai_text":false,"color":false}</template><meta name="generator" content="Hexo 8.1.2"><link rel="alternate" href="/atom.xml" title="unenter" type="application/atom+xml">
+</head><body id="body"><div><div id="loading-box" data-solitude-action="endLoading" style="zoom:1"><div class="loading-bg"><img class="loading-img nolazyload" src="/img/favicon.png" alt="loading image"></div></div></div><div><div id="console"><div class="console-content"><div class="console-card-group" data-solitude-action="onConsoleCardGroupClick" data-solitude-event="true"><div class="console-card-group-right"><div class="console-card tags" data-solitude-action="hideConsole"><div class="card-content"><div class="author-content-item-tips">标签</div><div class="author-content-item-title">探索感兴趣的内容</div></div><div class="card-tag-cloud"></div></div><div class="console-card history" data-solitude-action="hideConsole"><ul class="card-archive-list"><li class="item"><a href="/archives/2026/10/"><span class="date">2026/10</span><div class="count-group"><span class="count">3</span><span class="unit">篇</span></div></a></li><li class="item"><a href="/archives/2026/08/"><span class="date">2026/08</span><div class="count-group"><span class="count">1</span><span class="unit">篇</span></div></a></li><li class="item"><a href="/archives/"><span class="date">全部文章</span><div class="count-group"><span class="count">4</span><span class="unit">篇</span></div></a></li></ul></div></div></div><div class="button-group"><div class="console-btn-item"><span class="darkmode_switchbutton" data-solitude-action="toggleTheme" title="昼夜切换" heotip="昼夜切换"><i class="solitude fas fa-circle-half-stroke"></i></span></div><div class="console-btn-item" id="consoleHideAside"><span class="asideSwitch" data-solitude-action="switchHideAside" title="侧边栏显示" heotip="侧边栏显示"><i class="solitude fas fa-arrows-left-right-to-line"></i></span></div><div class="console-btn-item" id="consoleKeyboard" data-solitude-action="switchKeyboard"><span class="keyboardSwitch" title="键盘快捷键" heotip="键盘快捷键"><i class="solitude fas fa-keyboard"></i></span></div></div></div><div class="console-mask" data-solitude-action="hideConsole"></div></div></div><div id="sidebar" style="zoom: 1;"><div id="menu-mask" style="display: none;"></div><div id="sidebar-menus"><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/tags/"><div class="headline">标签</div><div class="length-num">0</div></a></div></div></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><span class="darkmode_switchbutton menu-child" data-solitude-action="toggleTheme"><i class="solitude fas fa-circle-half-stroke"></i><span>显示模式</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);" title="文库" heotip="文库"><span>文库</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/archives/" title="文章列表" heotip="文章列表"><i class="solitude  iconfont icon-folder-5-fill"></i><span>文章列表</span></a></li><li><a class="site-page child" href="/categories/" title="全部分类" heotip="全部分类"><i class="solitude  iconfont icon-checkbox-multiple-blank-fill"></i><span>全部分类</span></a></li><li><a class="site-page child" href="/tags/" title="全部标签" heotip="全部标签"><i class="solitude  iconfont icon-price-tag-3-fill"></i><span>全部标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);" title="博客" heotip="博客"><span>博客</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/links/" title="友链" heotip="友链"><i class="solitude  iconfont icon-group-fill"></i><span>友链</span></a></li><li><a class="site-page child" href="/charts/" title="统计" heotip="统计"><i class="solitude  iconfont icon-shuju8"></i><span>统计</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);" title="我的" heotip="我的"><span>我的</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/about/" title="关于" heotip="关于"><i class="solitude  iconfont icon-contacts-fill"></i><span>关于</span></a></li><li><a class="site-page child" href="/essay/" title="即刻" heotip="即刻"><i class="solitude  iconfont icon-essay"></i><span>即刻</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="card-tag-cloud"></div></div></div></div><div><div id="keyboard-tips"><div class="keyboardTitle">博客快捷键</div><div class="keyboardList"><div class="keyboardItem"><div class="keyGroup"><div class="key">Shift</div><div class="key">K</div></div><div class="keyContent"><div class="content">关闭快捷键</div></div></div><div class="keyboardItem"><div class="keyGroup"><div class="key">Shift</div><div class="key">C</div></div><div class="keyContent"><div class="content">控制台</div></div></div><div class="keyboardItem"><div class="keyGroup"><div class="key">Shift</div><div class="key">M</div></div><div class="keyContent"><div class="content">播放/暂停音乐</div></div></div><div class="keyboardItem"><div class="keyGroup"><div class="key">Shift</div><div class="key">L</div></div><div class="keyContent"><div class="content">友链</div></div></div><div class="keyboardItem"><div class="keyGroup"><div class="key">Shift</div><div class="key">A</div></div><div class="keyContent"><div class="content">关于</div></div></div><div class="keyboardItem"><div class="keyGroup"><div class="key">Shift</div><div class="key">E</div></div><div class="keyContent"><div class="content">即刻</div></div></div></div></div><script>const keyboard_addKeyup = (e) => {
+    if (e.key === 'Shift') {
+        document.getElementById('keyboard-tips').classList.remove('show');
+    }
+}
+
+const keyboard_addKeydown = (e) => {
+    const keyboards = [{"name":"关闭快捷键","key":"K","func":"keyboard"},{"name":"控制台","key":"C","sco":"showConsole"},{"name":"播放/暂停音乐","key":"M","sco":"musicToggle"},{"name":"友链","key":"L","url":"/links/"},{"name":"关于","key":"A","url":"/about/"},{"name":"即刻","key":"E","url":"/moment/"}];
+    if (e.key === 'Shift') {
+        document.getElementById('keyboard-tips').classList.add('show');
+    }
+
+    for (let i = 0; i < keyboards.length; i++) {
+        if (keyboards[i].url) {
+            if (keyboards[i].url.startsWith('http')) {
+                if (e.key === keyboards[i].key) {
+                    window.open(keyboards[i].url);
+                }
+            } else {
+                if (e.key === keyboards[i].key) {
+                    Solitude.navigate(keyboards[i].url);
+                }
+            }
+        } else if (keyboards[i].sco) {
+            if (e.key === keyboards[i].key) {
+                Solitude[keyboards[i].sco]?.();
+            }
+        } else if (keyboards[i].func) {
+            if (e.key === keyboards[i].key) {
+                window[keyboards[i].func]();
+            }
+        }
+    }
+}
+
+function openKeyboard() {
+
+    window.addEventListener('keyup', keyboard_addKeyup);
+
+    window.addEventListener('keydown', keyboard_addKeydown);
+}
+function closeKeyboard() {
+
+    window.removeEventListener('keyup', keyboard_addKeyup);
+
+    window.removeEventListener('keydown', keyboard_addKeydown);
+}
+
+var sco_keyboards = localStorage.getItem('keyboard') === 'true'
+if (sco_keyboards) {
+    openKeyboard();
+    let keyboard = document.getElementById('consoleKeyboard');
+    keyboard?.classList.add('on');
+}</script></div><div><div class="needEndHide" id="rightside"><div class="rs_hide"><button class="translate" type="button" title="简繁转换" heotip="简繁转换">简</button><button class="mode" type="button" title="显示模式切换" heotip="显示模式切换" data-solitude-action="toggleTheme"><i class="fas fa-circle-half-stroke"></i></button><button class="aside pc" type="button" title="侧边栏" heotip="侧边栏" data-solitude-action="switchHideAside"><i class="fas fa-arrows-alt-h"></i></button><button class="keyboard pc" type="button" title="键盘快捷键" heotip="键盘快捷键" data-solitude-action="switchKeyboard"><i class="fas fa-keyboard"></i></button></div><div class="rs_show"><button class="config" type="button" title="扩展" heotip="扩展" data-solitude-action="toggleTargetClass" data-solitude-target=".rs_hide"><i class="fas fa-gear"></i></button><button class="mobile toc" type="button" title="目录" heotip="目录" data-solitude-action="toggleTargetClass" data-solitude-target="#card-toc" data-solitude-class="open"><i class="fas fa-list"></i></button></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav class="show" id="nav" data-solitude-action="onNavBlankClickCloseConsole" data-solitude-event="true"><div id="nav-group"><div id="blog_name"><a href="/" title="返回博客主页" id="site-name" heotip="返回博客主页"><span class="title">unenter</span><i class="solitude fas fa-home"></i></a></div><div id="page-name-mask"><div id="page-name"><a id="page-name-text" data-solitude-action="toTop" title="返回顶部" heotip="返回顶部">GPIO输入输出及OLED驱动</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span>文库</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/archives/"><i class="solitude  iconfont icon-folder-5-fill"></i><span>文章列表</span></a></li><li><a class="site-page child" href="/categories/"><i class="solitude  iconfont icon-checkbox-multiple-blank-fill"></i><span>全部分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="solitude  iconfont icon-price-tag-3-fill"></i><span>全部标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span>博客</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/links/"><i class="solitude  iconfont icon-group-fill"></i><span>友链</span></a></li><li><a class="site-page child" href="/charts/"><i class="solitude  iconfont icon-shuju8"></i><span>统计</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span>我的</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/about/"><i class="solitude  iconfont icon-contacts-fill"></i><span>关于</span></a></li><li><a class="site-page child" href="/essay/"><i class="solitude  iconfont icon-essay"></i><span>即刻</span></a></li></ul></div></div></div><div id="nav-left"></div><div id="nav-right"><div class="nav-button" id="theme-toggle"><a class="site-page" href="/" data-solitude-action="runConfiguredAction" data-solitude-value="Solitude.toggleTheme()" data-solitude-prevent="true" title="切换模式" heotip="切换模式"><i class="solitude iconfont icon-moon-clear-fill"></i></a></div><div class="nav-button" id="randomPost_button"><a class="site-page" data-solitude-action="randomPost" data-solitude-prevent="true" title="随机一篇文章" heotip="随机一篇文章" href="javascript:void(0);"><i class="solitude fas fa-dice-d6"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索" heotip="搜索"><i class="solitude fas fa-magnifying-glass"></i></a></div><div class="nav-button" id="nav-console"><a class="console_switchbutton" data-solitude-action="toggleConsole" data-solitude-prevent="true" title="中控台" heotip="中控台" href="javascript:void(0);"><label><i class="left"></i><i class="center"></i><i class="right"></i></label></a></div><div class="nav-button" id="nav-totop" data-solitude-action="toTop" title="返回顶部" heotip="返回顶部"><a class="totopbtn"><i class="solitude fas fa-arrow-up"></i><span id="percent">0</span></a></div><div id="toggle-menu"><a class="site-page"><i class="solitude fas fa-bars"></i></a></div></div></div></nav><div class="post-cover-aside"><a class="post-cover-aside-link fancybox" href="/img/default.avif" target="_blank" rel="noopener" data-fancybox="images" data-caption="GPIO输入输出及OLED驱动" aria-label="GPIO输入输出及OLED驱动"><img class="post-cover-aside-img nolazyload" id="post-cover" src="/img/default.avif" alt="GPIO输入输出及OLED驱动"></a></div><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original" title="本文采用 原创 许可协议">原创</a><div class="tag_share"><div class="post-meta__tag-list"></div></div></div></div><h1 class="post-title">GPIO输入输出及OLED驱动</h1><div id="post-meta"><div class="meta-secondline"><span class="post-meta-wordcount"><i class="post-meta-icon solitude fas fa-file-word" title="文章字数"></i><span class="word-count">434</span></span><span class="post-meta-date" title="发布于 2026-10-22 22:00:37"><i class="post-meta-icon solitude fas fa-calendar-days"></i><time datetime="2026-10-22T14:00:37.144Z">2026-10-22T14:00:37.144Z</time></span><span class="post-meta-date" title="最后更新于 2026-10-22 22:04:59"><i class="post-meta-icon solitude fas fa-arrows-rotate"></i><time datetime="2026-10-22T14:04:59.006Z">2026-10-22T14:04:59.006Z</time></span><span class="post-meta-readtime"><i class="post-meta-icon solitude fas fa-clock" title="阅读时长"></i><span>1 分钟</span></span><span class="post-meta-position" title="作者 IP 属地China"><i class="post-meta-icon solitude fas fa-location-dot"></i><span>China</span></span></div></div></div><div class="post-radius-bottom"></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content article-container"><h1 id="GPIO输出"><a href="#GPIO输出" class="headerlink" title="GPIO输出"></a>GPIO输出</h1><h3 id="输出模式"><a href="#输出模式" class="headerlink" title="输出模式"></a>输出模式</h3><table>
+<thead>
+<tr>
+<th>八种输出模式</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>浮空输入</td>
+<td>可读取引脚电平，若引脚悬空，则电平不确定</td>
+</tr>
+<tr>
+<td>上拉输入</td>
+<td>可读取引脚电平，内部连接上拉电阻，悬空时默认高电平</td>
+</tr>
+<tr>
+<td>下拉输入</td>
+<td>可读取引脚电平，内部连接下拉电阻，悬空时默认低电平</td>
+</tr>
+<tr>
+<td>模拟输入</td>
+<td>GPIO无效，引脚直接接入内部ADC</td>
+</tr>
+<tr>
+<td>开漏输出</td>
+<td>可输出引脚电平，高电平为高阻态，低电平接VSS</td>
+</tr>
+<tr>
+<td>推挽输出</td>
+<td>可输出引脚电平，高电平接VDD，低电平接VSS</td>
+</tr>
+<tr>
+<td>复用开漏输出</td>
+<td>由片上外设控制，高电平为高阻态，低电平接VSS</td>
+</tr>
+<tr>
+<td>复用推挽输出</td>
+<td>由片上外设控制，高电平接VDD，低电平接VSS</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="掌握函数"><a href="#掌握函数" class="headerlink" title="掌握函数"></a>掌握函数</h3><table>
+<thead>
+<tr>
+<th align="left">函数</th>
+<th align="right">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">RCC_APB2PeriphClockCmd</td>
+<td align="right">开启APB2外设</td>
+</tr>
+<tr>
+<td align="left">GPIO_InitTypeDef</td>
+<td align="right">配置结构体</td>
+</tr>
+<tr>
+<td align="left">GPIO_SetBits</td>
+<td align="right">配置端口值 (高电平)</td>
+</tr>
+<tr>
+<td align="left">GPIO_ResetBits</td>
+<td align="right">清除端口值 (低电平)</td>
+</tr>
+<tr>
+<td align="left">GPIO_WriteBit</td>
+<td align="right">可配置高低电平</td>
+</tr>
+<tr>
+<td align="left">GPIO_Write</td>
+<td align="right">可以同时配置16个端口</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="代码演示"><a href="#代码演示" class="headerlink" title="代码演示"></a>代码演示</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span> <span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);</span><br><span class="line">	</span><br><span class="line">	GPIO_InitTypeDef GPIO_InitStructure;</span><br><span class="line">	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;</span><br><span class="line">	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;</span><br><span class="line">	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;</span><br><span class="line">	GPIO_Init(GPIOB, &amp;GPIO_InitStructure);</span><br><span class="line">	</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">		GPIO_ResetBits(GPIOB, GPIO_Pin_12);</span><br><span class="line">		GPIO_SetBits(GPIOB, GPIO_Pin_12);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="GPIO输入"><a href="#GPIO输入" class="headerlink" title="GPIO输入"></a>GPIO输入</h1><table>
+<thead>
+<tr>
+<th>掌握函数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GPIO_ReadInputDataBit</td>
+<td>读输入寄存器的状态</td>
+</tr>
+<tr>
+<td>GPIO_ReadOutputDataBit</td>
+<td>读输出寄存器的状态</td>
+</tr>
+</tbody></table>
+<h3 id="代码演示-1"><a href="#代码演示-1" class="headerlink" title="代码演示"></a>代码演示</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">LED1_Turn</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">if</span> (GPIO_ReadOutputDataBit(GPIOA, GPIO_Pin_1) == <span class="number">0</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		GPIO_SetBits(GPIOA, GPIO_Pin_1);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">	&#123;</span><br><span class="line">		GPIO_ResetBits(GPIOA, GPIO_Pin_1);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="OLED显示"><a href="#OLED显示" class="headerlink" title="OLED显示"></a>OLED显示</h1><table>
+<thead>
+<tr>
+<th>掌握函数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>OLED_Init();</td>
+<td>初始化</td>
+</tr>
+<tr>
+<td>OLED_Clear();</td>
+<td>清屏</td>
+</tr>
+<tr>
+<td>OLED_ShowChar(1, 1, ‘A’);</td>
+<td>显示一个字符</td>
+</tr>
+<tr>
+<td>OLED_ShowString(1, 3, “HelloWorld!”);</td>
+<td>显示字符串</td>
+</tr>
+<tr>
+<td>OLED_ShowNum(2, 1, 12345, 5);</td>
+<td>显示十进制数字</td>
+</tr>
+<tr>
+<td>OLED_ShowSignedNum(2, 7, -66, 2);</td>
+<td>显示有符号十进制数字</td>
+</tr>
+<tr>
+<td>OLED_ShowHexNum(3, 1, 0xAA55, 4);</td>
+<td>显示十六进制数字</td>
+</tr>
+<tr>
+<td>OLED_ShowBinNum(4, 1, 0xAA55, 16);</td>
+<td>显示二进制数字</td>
+</tr>
+</tbody></table>
+</article><div class="post-copyright"><div class="post-copyright__author_group"><div class="post-copyright__author_img"><img class="post-copyright__author_img_front" src="/img/avatar.avif"></div><div class="post-copyright__author_name">unenter</div><div class="post-copyright__author_desc"></div></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div id="quit-box" data-solitude-action="hideReward"></div><div class="reward-link mode"><a class="reward-link-button" href="/atom.xml"><i class="solitude fas fa-seedling"></i>订阅</a></div></div></div><div class="social-share"><a class="social-share-ico icon-qq" target="_blank" rel="noopener" href="https://connect.qq.com/widget/shareqq/index.html?url=https%3A%2F%2Fblog.unenter.cn%2Fposts%2Fgpio%2F&amp;title=GPIO%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E5%8F%8AOLED%E9%A9%B1%E5%8A%A8&amp;desc=undefined&amp;summary=undefined&amp;site=GPIO%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E5%8F%8AOLED%E9%A9%B1%E5%8A%A8&amp;pics=%2Fimg%2Fdefault.avif" title="分享到QQ" heotip="分享到QQ"><i class="solitude fab fa-qq"></i></a><a class="social-share-ico icon-twitter" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fblog.unenter.cn%2Fposts%2Fgpio%2F&amp;text=GPIO%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E5%8F%8AOLED%E9%A9%B1%E5%8A%A8" title="分享到Twitter" heotip="分享到Twitter"><i class="solitude fab fa-twitter"></i></a><a class="social-share-ico icon-telegram" target="_blank" rel="noopener" href="https://t.me/share/url?url=https%3A%2F%2Fblog.unenter.cn%2Fposts%2Fgpio%2F&amp;text=GPIO%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E5%8F%8AOLED%E9%A9%B1%E5%8A%A8" title="分享到Telegram" heotip="分享到Telegram"><i class="solitude fab fa-telegram"></i></a><a class="social-share-ico icon-linkedin" target="_blank" rel="noopener" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3A%2F%2Fblog.unenter.cn%2Fposts%2Fgpio%2F&amp;title=GPIO%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E5%8F%8AOLED%E9%A9%B1%E5%8A%A8&amp;summary=undefined&amp;source=GPIO%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E5%8F%8AOLED%E9%A9%B1%E5%8A%A8" title="分享到LinkedIn" heotip="分享到LinkedIn"><i class="solitude fab fa-linkedin"></i></a></div><div class="post-copyright__notice"><span class="post-copyright-info">本文是原创文章，采用<a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans">CC BY-NC-SA 4.0</a>许可协议，完整转载请注明来自<a href="/">unenter</a></span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__tag-list"></div></div></div><nav class="needEndHide pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/exti/"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">EXTI外部中断</div></div></a></div><div class="next-post pull-right"><a href="/posts/orangepi/"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">OrangePi安装QQ机器人</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="card-info-avatar is-center"><div class="top-group"><div class="sayhi" id="sayhi" data-solitude-action="changeWittyWord"></div></div></div><div class="avatar"><img alt="头像" src="/img/avatar.webp"></div><div class="description">This is my Blog</div><div class="bottom-group"><span class="left"><div class="name">unenter</div><div class="desc">只有迎风，风筝才能飞得更高。</div></span><div class="social-icons is-center"><a class="social-icon" target="_blank" rel="noopener" href="https://github.com/unenter" title="Github" heotip="Github"><i class="solitude  iconfont icon-github"></i></a><a class="social-icon" target="_blank" rel="noopener" href="https://space.bilibili.com/694960998" title="Bilibili" heotip="Bilibili"><i class="solitude  iconfont icon-bilibili-fill"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="solitude fas fa-bars"></i><span>文章目录</span></div><div class="toc-content" id="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#GPIO%E8%BE%93%E5%87%BA"><span class="toc-text">GPIO输出</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BE%93%E5%87%BA%E6%A8%A1%E5%BC%8F"><span class="toc-text">输出模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8E%8C%E6%8F%A1%E5%87%BD%E6%95%B0"><span class="toc-text">掌握函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E6%BC%94%E7%A4%BA"><span class="toc-text">代码演示</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#GPIO%E8%BE%93%E5%85%A5"><span class="toc-text">GPIO输入</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E6%BC%94%E7%A4%BA-1"><span class="toc-text">代码演示</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#OLED%E6%98%BE%E7%A4%BA"><span class="toc-text">OLED显示</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="solitude fas fa-map"></i><span>最近发布</span></div><div class="aside-list"><a class="aside-list-item" href="/posts/tim/" title="TIM定时中断"><div class="thumbnail"><img alt="TIM定时中断" src="/img/default.avif"></div><div class="content"><span class="title" href="/posts/tim/" title="TIM定时中断">TIM定时中断</span></div></a><a class="aside-list-item" href="/posts/exti/" title="EXTI外部中断"><div class="thumbnail"><img alt="EXTI外部中断" src="/img/default.avif"></div><div class="content"><span class="title" href="/posts/exti/" title="EXTI外部中断">EXTI外部中断</span></div></a><a class="aside-list-item" href="/posts/gpio/" title="GPIO输入输出及OLED驱动"><div class="thumbnail"><img alt="GPIO输入输出及OLED驱动" src="/img/default.avif"></div><div class="content"><span class="title" href="/posts/gpio/" title="GPIO输入输出及OLED驱动">GPIO输入输出及OLED驱动</span></div></a><a class="aside-list-item" href="/posts/orangepi/" title="OrangePi安装QQ机器人"><div class="thumbnail"><img alt="OrangePi安装QQ机器人" src="https://cdn.jsdelivr.net/npm/ashenwitch/post/orangepi.jpg"></div><div class="content"><span class="title" href="/posts/orangepi/" title="OrangePi安装QQ机器人">OrangePi安装QQ机器人</span></div></a></div></div></div></div></main><footer id="footer"><div id="footer_deal"><a class="deal_link" target="_blank" rel="noopener" href="https://github.com/unenter" title="Github" heotip="Github"><i class="solitude  iconfont icon-github"></i></a><a class="deal_link" target="_blank" rel="noopener" href="https://x.com/sakutulip" title="X" heotip="X"><i class="solitude  iconfont icon-TwitterX"></i></a><a class="deal_link" target="_blank" rel="noopener" href="https://discord.com/invite/semBTTSN" title="Discord" heotip="Discord"><i class="solitude  iconfont icon-discord"></i></a><div><div class="nolazyload footer_mini_logo" id="footer_mini_logo" title="返回顶部" heotip="返回顶部" data-solitude-action="toTop"><img src= "" data-lazy-src="/img/avatar.webp" alt="返回顶部"></div></div><a class="deal_link" target="_blank" rel="noopener" href="https://y.music.163.com/m/user?id=5112221303" title="Music" heotip="Music"><i class="solitude  iconfont icon-wangyiyunyinle"></i></a><a class="deal_link" href="mailto:breadeggs@hotmail.com" title="Email" heotip="Email"><i class="solitude  iconfont icon-mail-line"></i></a><a class="deal_link" target="_blank" rel="noopener" href="https://t.me/nullenter" title="Telegram" heotip="Telegram"><i class="solitude iconfont icon-telegram"></i></a></div><div><div id="st-footer"><div class="footer-group"><h3 class="footer-title">导航</h3><div class="footer-links"><a class="footer-item" href="/archives/" title="归档">归档</a><a class="footer-item" href="/categories/" title="分类">分类</a><a class="footer-item" href="/tags/" title="标签">标签</a><a class="footer-item" href="/links/" title="友链">友链</a></div></div><div class="footer-group"><h3 class="footer-title">协议</h3><div class="footer-links"><a class="footer-item" href="/operations/" title="Operations">Operations</a><a class="footer-item" href="/privacy/" title="Privacy">Privacy</a><a class="footer-item" href="/copyright/" title="Copyright">Copyright</a><a class="footer-item" href="/cookies/" title="Cookies">Cookies</a></div></div><div class="footer-group"><div class="footer-title-group"><h3 class="footer-title">友链</h3><button class="random-friends-btn" data-solitude-action="randomLinksList" title="友链" heotip="友链"><i class="solitude fas fa-arrows-rotate"></i></button></div><div class="footer-links" id="friend-links-in-footer"></div></div></div></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div class="copyright">© 2023 - 2026 By<a class="footer-bar-link" href="/" title="unenter">unenter</a></div><div class="beian-group"><div><a class="footer-bar-link" target="_blank" rel="noopener" href="https://icp.gov.moe/?keyword=20260002" title="萌ICP备20260002" heotip="萌ICP备20260002"><div><img class="beian-icon" src= "" data-lazy-src="/img/moe.png" alt="萌ICP备20260002"></div><span class="beian-name">萌ICP备20260002</span></a></div><a class="footer-bar-link" target="_blank" rel="noopener" href="https://hexo.io/" title="框架：Hexo" heotip="框架：Hexo">框架：Hexo</a><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/everfu/hexo-theme-solitude" title="主题：Solitude" heotip="主题：Solitude">主题：Solitude</a></div></div><div><div class="footer-bar-right"><a class="footer-bar-link" href="/atom.xml" title="RSS" heotip="RSS">RSS</a><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/everfu/hexo-theme-solitude/blob/main/LICENSE" title="License" heotip="License"><i class="solitude fas fa-copyright"></i><i class="solitude fab fa-creative-commons-by"></i><i class="solitude fab fa-creative-commons-nc"></i><i class="solitude fab fa-creative-commons-nd"></i></a></div></div></div></div><div class="comment-barrage needEndHide"></div></footer></div><div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="solitude fas fa-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="solitude fas fa-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="solitude fas fa-arrows-rotate"></i></div><div class="rightMenu-item" id="menu-top"><i class="solitude fas fa-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext" title="复制选中文字" heotip="复制选中文字"><i class="solitude fas fa-clone"></i><span>复制选中文字</span></div><div class="rightMenu-item" id="menu-pastetext" title="粘贴文字" heotip="粘贴文字"><i class="solitude fas fa-clipboard"></i><span>粘贴文字</span></div><div class="rightMenu-item" id="menu-newwindow" title="在新窗口打开" heotip="在新窗口打开"><i class="solitude far fa-window-maximize"></i><span>在新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink" title="复制链接地址" heotip="复制链接地址"><i class="solitude fas fa-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg" title="复制此图片" heotip="复制此图片"><i class="solitude fas fa-clone"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg" title="下载此图片" heotip="下载此图片"><i class="solitude fas fa-cloud-arrow-down"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-search" title="站内搜索" heotip="站内搜索"><i class="solitude fas fa-magnifying-glass"></i><span>站内搜索</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><div class="rightMenu-item" id="menu-randomPost" data-solitude-action="runConfiguredAction" data-solitude-value="toRandomPost()" title="随便逛逛" heotip="随便逛逛"><i class="solitude iconfont icon-dice-line"></i><span>随便逛逛</span></div><div class="rightMenu-item" data-solitude-action="runConfiguredAction" data-solitude-value="pjax.loadUrl('/categories/')" title="全部分类" heotip="全部分类"><i class="solitude iconfont icon-checkbox-multiple-blank-fill"></i><span>全部分类</span></div><div class="rightMenu-item" data-solitude-action="runConfiguredAction" data-solitude-value="pjax.loadUrl('/tags/')" title="全部标签" heotip="全部标签"><i class="solitude iconfont icon-price-tag-3-fill"></i><span>全部标签</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><div class="rightMenu-item" id="menu-darkmode" data-solitude-action="switchDarkMode"><i class="solitude fas fa-circle-half-stroke"></i><span class="menu-darkmode-text" title="深色模式" heotip="深色模式">深色模式</span></div><div class="rightMenu-item" id="menu-translate"><i class="solitude fas fa-language"></i><span title="转为繁体" heotip="转为繁体">转为繁体</span></div></div></div><div id="rightmenu-mask"></div></div><div><!-- Critical scripts loaded synchronously--><script src="/js/utils.js?v=4.0.0"></script><!-- Non-critical scripts loaded asynchronously--><script defer src="/js/third_party/waterfall.min.js?v=4.0.0"></script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js"></script><!-- Feature-specific scripts loaded asynchronously--><script defer src="https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/typeit@8.8.7/dist/index.umd.min.js"></script><!-- UI enhancement scripts--><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/dist/medium-zoom.min.js"></script><!-- Music player scripts--><!-- Cover color processing scripts--><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+Solitude.addGlobalFn('pjaxSend', () => {
+  Pace.restart()
+}, 'pace_restart')
+</script><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- Search functionality--><!-- Main module dynamically imports enabled first-party features.--><script type="module" src="/js/main.js?v=4.0.0"></script><script src="/js/schedule.js"></script><script src="https://open.lightxi.com/unpkg/chinese-lunar@0.1.4/lib/chinese-lunar.js"></script><script src="/js/custom.js"></script><div class="js-pjax"><script>mermaid.run();
+</script></div></div><!-- pjax--><script>function initPjax() {
+    if (typeof Pjax === 'undefined') {
+        setTimeout(initPjax, 100);
+        return;
+    }
+
+    const instance = new Pjax({
+        elements: 'a:not([target="_blank"])',
+        selectors: ["title","#body-wrap","#site-config","meta[name=\"description\"]",".js-pjax","meta[property^=\"og:\"]","#config-diff",".rs_show",".rs_hide"],
+        cacheBust: false,
+        analytics: false,
+        scrollRestoration: false
+    })
+
+    // Pjax dispatches synthetic resize/scroll events on window after every selector switch.
+    // Use a Node target so injected listeners that call event.target.contains() remain compatible.
+    instance.onSwitch = function () {
+        this.state.numPendingSwitches--
+
+        if (this.state.numPendingSwitches === 0) {
+            document.dispatchEvent(new Event('resize', { bubbles: true }))
+            document.dispatchEvent(new Event('scroll', { bubbles: true }))
+            this.afterAllSwitches()
+        }
+    }
+
+    Solitude.pjax = instance;
+
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+        const newScript = document.createElement('script')
+        const content = item.text || item.textContent || item.innerHTML || ""
+        Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+        newScript.appendChild(document.createTextNode(content))
+        item.parentNode.replaceChild(newScript, item)
+    })
+
+    document.addEventListener('pjax:send', () => {
+        document.dispatchEvent(new CustomEvent('solitude:beforeNavigate'))
+        Solitude.disposePage?.()
+        Object.values(window.globalFn?.pjax || {}).forEach(dispose => dispose())
+        if (window.globalFn) window.globalFn.pjax = {}
+    })
+
+    document.addEventListener('pjax:complete', async () => {
+        await Solitude.refresh()
+
+        document.querySelectorAll('script[data-pjax]').forEach(item => {
+            const newScript = document.createElement('script')
+            const content = item.text || item.textContent || item.innerHTML || ""
+            Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+            newScript.appendChild(document.createTextNode(content))
+            item.parentNode.replaceChild(newScript, item)
+        })
+
+        Solitude.config.lazyload.enable && window.lazyLoadInstance?.update()
+        document.dispatchEvent(new CustomEvent('solitude:afterNavigate', {
+            detail: {page: Solitude.page}
+        }))
+
+    })
+
+    document.addEventListener('pjax:error', (e) => {
+        if (e.request.status === 404) {
+            Solitude.navigate('/404.html')
+        }
+    })
+}
+
+// 初始化 Pjax
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPjax);
+} else {
+    initPjax();
+}</script><!-- google adsense--><div id="local-search"><div class="search-dialog" role="dialog" aria-modal="true" aria-labelledby="local-search-title"><nav class="search-nav"><span class="search-dialog-title" id="local-search-title">搜索</span><button class="search-close-button" type="button" aria-label="关闭搜索"><i class="solitude fas fa-xmark"></i></button></nav><div class="search-wrap"><div class="search-box"><input class="search-box-input" id="search-input" type="search" autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" placeholder="输入关键词快速查找" aria-label="输入关键词快速查找"></div><div id="search-suggestions" aria-label="热门搜索"></div><ul id="search-results" hidden></ul><div id="search-pagination"></div><div id="search-tips"></div></div></div><div id="search-mask"></div></div></body></html>

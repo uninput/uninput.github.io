@@ -1,0 +1,666 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TIM定时中断 | unenter</title><noscript>开启 JavaScript 后才能访问本站</noscript><link rel="icon" href="/img/favicon.png"><link rel="stylesheet" href="/css/index.css?v=4.0.0"><link rel="canonical" href="https://blog.unenter.cn/posts/tim/index.html"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.0/css/all.min.css"><!-- Feature-specific CSS--><!-- aplayer--><!-- swiper--><!-- fancybox ui--><!-- katex--><!-- Open Graph--><meta name="description" content="定时器类型 类型 编号 总线 功能 高级定时器 TIM1、TIM8 APB2 拥有通用定时器全部功能，并额外具有重复计数器、死区生成、互补输出、刹车输入等功能 通用定时器 TIM2、TIM3、TIM4、TIM5 APB1 拥有基本定时器全部功能，并额外具有内外时钟源选择、输入捕获、输出"><!-- pwa--><meta name="apple-mobile-web-app-capable" content="unenter"><meta name="theme-color" content="var(--efu-main)"><meta name="apple-mobile-web-app-status-bar-style" content="var(--efu-main)"><link rel="bookmark" href="/img/favicon.png"><link rel="apple-touch-icon" href="/img/favicon.png" sizes="180x180"><script>console.log(' %c Solitude %c ' + '4.0.0' + ' %c https://github.com/everfu/hexo-theme-solitude',
+    'background:#35495e ; padding: 1px; border-radius: 3px 0 0 3px;  color: #fff',
+    'background:#ff9a9a ; padding: 1px; border-radius: 0 3px 3px 0;  color: #fff',
+    'background:unset ; padding: 1px; border-radius: 0 3px 3px 0;  color: #fff')
+</script><link rel="stylesheet" href="/css/custom.css" media="defer" onload="this.media='all'"><link rel="stylesheet" href="/css/schedule.css"><script src="https://npm.elemecdn.com/echarts@4.9.0/dist/echarts.min.js"></script><script>(()=>{
+        const parseConfig = (id) => {
+            const element = document.getElementById(id)
+            if (!element) return {}
+            try {
+                return JSON.parse(element.content?.textContent || element.textContent || '{}')
+            } catch (error) {
+                console.error('Invalid Solitude config:', error)
+                return {}
+            }
+        }
+        const saveToLocal = {
+            set: function setWithExpiry(key, value, ttl) {
+                if (ttl === 0)
+                    return
+                const now = new Date()
+                const expiryDay = ttl * 86400000
+                const item = {
+                    value: value,
+                    expiry: now.getTime() + expiryDay
+                }
+                localStorage.setItem(key, JSON.stringify(item))
+            },
+            get: function getWithExpiry(key) {
+                const itemStr = localStorage.getItem(key)
+
+                if (!itemStr) {
+                    return undefined
+                }
+                let item
+                try {
+                    item = JSON.parse(itemStr)
+                } catch (error) {
+                    localStorage.removeItem(key)
+                    return undefined
+                }
+                const now = new Date()
+
+                if (now.getTime() > item.expiry) {
+                    localStorage.removeItem(key)
+                    return undefined
+                }
+                return item.value
+            }
+        };
+        const resourceRequests = new Map()
+        const loadResource = (url, create) => {
+            const absoluteUrl = new URL(url, document.baseURI).href
+            if (resourceRequests.has(absoluteUrl)) return resourceRequests.get(absoluteUrl)
+            const request = new Promise((resolve, reject) => {
+                const element = create(absoluteUrl)
+                element.addEventListener('load', () => resolve(element), {once: true})
+                element.addEventListener('error', () => {
+                    resourceRequests.delete(absoluteUrl)
+                    reject(new Error('Unable to load ' + absoluteUrl))
+                }, {once: true})
+                document.head.appendChild(element)
+            })
+            resourceRequests.set(absoluteUrl, request)
+            return request
+        }
+        const api = window.Solitude || {}
+        window.Solitude = api
+        api.installLegacyAdapter = () => {
+            const aliases = {
+                utils: api,
+                sco: api,
+                GLOBAL_CONFIG: api.config
+            }
+            Object.entries(aliases).forEach(([name, value]) => {
+                if (name in window) return
+                Object.defineProperty(window, name, {
+                    configurable: true,
+                    enumerable: false,
+                    value
+                })
+            })
+        }
+        Object.defineProperties(api, {
+            config: {configurable: true, get: () => parseConfig('site-config')},
+            page: {configurable: true, get: () => parseConfig('config-diff')}
+        })
+        Object.assign(api, {
+            saveToLocal: saveToLocal,
+            loadStyle: (url, options = {}) => loadResource(url, href => {
+                const link = document.createElement('link')
+                link.rel = 'stylesheet'
+                link.href = href
+                if (options.id) link.id = options.id
+                return link
+            }),
+            loadScript: (url, options = {}) => {
+              if (url.includes('barrage')) api.installLegacyAdapter()
+              return loadResource(url, src => {
+                const script = document.createElement('script')
+                script.src = src
+                script.async = options.async !== false
+                Object.entries(options.attributes || {}).forEach(([key, value]) => script.setAttribute(key, value))
+                return script
+              })
+            },
+            addGlobalFn: (key, fn, name = false, parent = window) => {
+                const globalFn = parent.globalFn || {}
+                const keyObj = globalFn[key] || {}
+
+                if (name && keyObj[name]) return
+
+                name = name || Object.keys(keyObj).length
+                keyObj[name] = fn
+                globalFn[key] = keyObj
+                parent.globalFn = globalFn
+            },
+            addEventListenerPjax: (ele, event, fn, option = false) => {
+              ele.addEventListener(event, fn, option)
+              api.addGlobalFn('pjax', () => {
+                  ele.removeEventListener(event, fn, option)
+              })
+            },
+            diffDateFormat: (selector) => {
+                selector.forEach(item => {
+                    const date = new Date(item.getAttribute('datetime') || item.textContent);
+                    item.textContent = (date.getMonth() + 1).toString()+'/'+date.getDate().toString();
+                });
+            },
+        })
+        api.getCSS = (url, id = false) => api.loadStyle(url, {id})
+        api.getScript = (url, attr = {}) => api.loadScript(url, {attributes: attr})
+        api.on = (name, handler) => {
+            const eventName = 'solitude:' + name
+            document.addEventListener(eventName, handler)
+            return () => document.removeEventListener(eventName, handler)
+        }
+        api.navigate = url => api.pjax?.loadUrl ? api.pjax.loadUrl(url) : window.location.assign(url)
+    })()</script><!-- theme--><script>initTheme = () => {
+    let isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const cachedMode = Solitude.saveToLocal.get('theme');
+    if (cachedMode === undefined) {
+        const nowMode =
+            isDarkMode ? 'dark' : 'light'
+        document.documentElement.setAttribute('data-theme', nowMode);
+    } else {
+        document.documentElement.setAttribute('data-theme', cachedMode);
+    }
+    Solitude.rightMenu?.mode(cachedMode === 'dark' && isDarkMode)
+}
+initTheme()</script><template id="site-config">{"root":"/","algolia":null,"localsearch":{"preload":true,"path":"/search.xml"},"runtime":"2023-03-05 00:00:00","lazyload":{"enable":true,"error":"/img/loading.svg"},"copyright":false,"highlight":{"limit":200,"expand":true,"copy":true,"syntax":"highlight.js"},"friend_links":{"async":false,"path":"/links.json","total":5,"placeholder":"","default_avatar":"/img/default_avatar.avif","more_url":"/links/","loading":"正在加载友链…","error":"友链加载失败，请稍后重试。","retry":"重新加载","random":"点击前往按钮进入随机一个友链，不保证跳转网站的安全性和可用性。本次随机到的是本站友链：⌈ ${name} ⌋","to":"前往","more":"更多","default_sort":"默认排序","random_sort":"随机排序","sort_label":"切换排序方式","scroll_left":"向左滚动","scroll_right":"向右滚动"},"random_posts":["posts/tim/","posts/exti/","posts/gpio/","posts/orangepi/"],"randomlink":true,"feature_modules":{"search":"local","post_ai":false,"friend_links":true,"music":false,"right_menu":true,"translate":true,"covercolor":false},"lang":{"theme":{"dark":"已切换至深色模式","light":"已切换至浅色模式"},"copy":{"success":"复制成功","error":"复制失败"},"backtop":"返回顶部","time":{"day":"天前","hour":"小时前","just":"刚刚","min":"分钟前","month":"个月前"},"day":" 天","f12":"开发者模式已开启，请遵守 GPL 协议。","totalk":"无需删除空行，直接输入评论即可","search":{"empty":"找不到你查询的内容：${query}","hit":"找到 ${hits} 条结果，用时 ${time} 毫秒","placeholder":"输入关键词快速查找","count":"共 \u003cb>${count}\u003c/b> 条结果。","loading":"搜索中…"}},"aside":{"state":{"morning":"晨兴好拥向阳坐，晚出宜披踏雪行。","noon":"玉碗冰寒消暑气。碧簟纱厨，向午朦胧睡。","afternoon":"夕阳薰细草，江色映疏帘。","night":"有约不来过夜半，闲敲棋子落灯花。","goodnight":"明月不知君已去，夜深还照读书窗。"},"witty_words":["你可以的","你一定可以的","祝你好运，陌生人"],"witty_comment":{"prefix":"好久不见，","back":"欢迎回来，"}},"covercolor":{"enable":false,"mode":"local","api":"https://api.qjqq.cn/api/Imgcolor?img=","time":43200000},"comment":false,"lightbox":"mediumZoom","right_menu":{"mode":{"dark":"深色模式","light":"浅色模式"},"img_error":"此图片无法复制与下载","translate":true,"ctrlOriginalMenu":"按住 Ctrl 并单击右键，可打开浏览器右键菜单"},"translate":{"translateDelay":0,"defaultEncoding":2,"toSimplified":"转为简体","toTraditional":"转为繁体","switchedToSimplified":"已切换为简体中文","switchedToTraditional":"已切换为繁体中文"},"lure":false,"expire":false}</template><template id="config-diff">{"is_post":true,"is_page":false,"is_home":false,"page":"post","toc":true,"comment":false,"ai_text":false,"color":false}</template><meta name="generator" content="Hexo 8.1.2"><link rel="alternate" href="/atom.xml" title="unenter" type="application/atom+xml">
+</head><body id="body"><div><div id="loading-box" data-solitude-action="endLoading" style="zoom:1"><div class="loading-bg"><img class="loading-img nolazyload" src="/img/favicon.png" alt="loading image"></div></div></div><div><div id="console"><div class="console-content"><div class="console-card-group" data-solitude-action="onConsoleCardGroupClick" data-solitude-event="true"><div class="console-card-group-right"><div class="console-card tags" data-solitude-action="hideConsole"><div class="card-content"><div class="author-content-item-tips">标签</div><div class="author-content-item-title">探索感兴趣的内容</div></div><div class="card-tag-cloud"></div></div><div class="console-card history" data-solitude-action="hideConsole"><ul class="card-archive-list"><li class="item"><a href="/archives/2026/10/"><span class="date">2026/10</span><div class="count-group"><span class="count">3</span><span class="unit">篇</span></div></a></li><li class="item"><a href="/archives/2026/08/"><span class="date">2026/08</span><div class="count-group"><span class="count">1</span><span class="unit">篇</span></div></a></li><li class="item"><a href="/archives/"><span class="date">全部文章</span><div class="count-group"><span class="count">4</span><span class="unit">篇</span></div></a></li></ul></div></div></div><div class="button-group"><div class="console-btn-item"><span class="darkmode_switchbutton" data-solitude-action="toggleTheme" title="昼夜切换" heotip="昼夜切换"><i class="solitude fas fa-circle-half-stroke"></i></span></div><div class="console-btn-item" id="consoleHideAside"><span class="asideSwitch" data-solitude-action="switchHideAside" title="侧边栏显示" heotip="侧边栏显示"><i class="solitude fas fa-arrows-left-right-to-line"></i></span></div><div class="console-btn-item" id="consoleKeyboard" data-solitude-action="switchKeyboard"><span class="keyboardSwitch" title="键盘快捷键" heotip="键盘快捷键"><i class="solitude fas fa-keyboard"></i></span></div></div></div><div class="console-mask" data-solitude-action="hideConsole"></div></div></div><div id="sidebar" style="zoom: 1;"><div id="menu-mask" style="display: none;"></div><div id="sidebar-menus"><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/tags/"><div class="headline">标签</div><div class="length-num">0</div></a></div></div></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><span class="darkmode_switchbutton menu-child" data-solitude-action="toggleTheme"><i class="solitude fas fa-circle-half-stroke"></i><span>显示模式</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);" title="文库" heotip="文库"><span>文库</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/archives/" title="文章列表" heotip="文章列表"><i class="solitude  iconfont icon-folder-5-fill"></i><span>文章列表</span></a></li><li><a class="site-page child" href="/categories/" title="全部分类" heotip="全部分类"><i class="solitude  iconfont icon-checkbox-multiple-blank-fill"></i><span>全部分类</span></a></li><li><a class="site-page child" href="/tags/" title="全部标签" heotip="全部标签"><i class="solitude  iconfont icon-price-tag-3-fill"></i><span>全部标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);" title="博客" heotip="博客"><span>博客</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/links/" title="友链" heotip="友链"><i class="solitude  iconfont icon-group-fill"></i><span>友链</span></a></li><li><a class="site-page child" href="/charts/" title="统计" heotip="统计"><i class="solitude  iconfont icon-shuju8"></i><span>统计</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);" title="我的" heotip="我的"><span>我的</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/about/" title="关于" heotip="关于"><i class="solitude  iconfont icon-contacts-fill"></i><span>关于</span></a></li><li><a class="site-page child" href="/essay/" title="即刻" heotip="即刻"><i class="solitude  iconfont icon-essay"></i><span>即刻</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="card-tag-cloud"></div></div></div></div><div><div id="keyboard-tips"><div class="keyboardTitle">博客快捷键</div><div class="keyboardList"><div class="keyboardItem"><div class="keyGroup"><div class="key">Shift</div><div class="key">K</div></div><div class="keyContent"><div class="content">关闭快捷键</div></div></div><div class="keyboardItem"><div class="keyGroup"><div class="key">Shift</div><div class="key">C</div></div><div class="keyContent"><div class="content">控制台</div></div></div><div class="keyboardItem"><div class="keyGroup"><div class="key">Shift</div><div class="key">M</div></div><div class="keyContent"><div class="content">播放/暂停音乐</div></div></div><div class="keyboardItem"><div class="keyGroup"><div class="key">Shift</div><div class="key">L</div></div><div class="keyContent"><div class="content">友链</div></div></div><div class="keyboardItem"><div class="keyGroup"><div class="key">Shift</div><div class="key">A</div></div><div class="keyContent"><div class="content">关于</div></div></div><div class="keyboardItem"><div class="keyGroup"><div class="key">Shift</div><div class="key">E</div></div><div class="keyContent"><div class="content">即刻</div></div></div></div></div><script>const keyboard_addKeyup = (e) => {
+    if (e.key === 'Shift') {
+        document.getElementById('keyboard-tips').classList.remove('show');
+    }
+}
+
+const keyboard_addKeydown = (e) => {
+    const keyboards = [{"name":"关闭快捷键","key":"K","func":"keyboard"},{"name":"控制台","key":"C","sco":"showConsole"},{"name":"播放/暂停音乐","key":"M","sco":"musicToggle"},{"name":"友链","key":"L","url":"/links/"},{"name":"关于","key":"A","url":"/about/"},{"name":"即刻","key":"E","url":"/moment/"}];
+    if (e.key === 'Shift') {
+        document.getElementById('keyboard-tips').classList.add('show');
+    }
+
+    for (let i = 0; i < keyboards.length; i++) {
+        if (keyboards[i].url) {
+            if (keyboards[i].url.startsWith('http')) {
+                if (e.key === keyboards[i].key) {
+                    window.open(keyboards[i].url);
+                }
+            } else {
+                if (e.key === keyboards[i].key) {
+                    Solitude.navigate(keyboards[i].url);
+                }
+            }
+        } else if (keyboards[i].sco) {
+            if (e.key === keyboards[i].key) {
+                Solitude[keyboards[i].sco]?.();
+            }
+        } else if (keyboards[i].func) {
+            if (e.key === keyboards[i].key) {
+                window[keyboards[i].func]();
+            }
+        }
+    }
+}
+
+function openKeyboard() {
+
+    window.addEventListener('keyup', keyboard_addKeyup);
+
+    window.addEventListener('keydown', keyboard_addKeydown);
+}
+function closeKeyboard() {
+
+    window.removeEventListener('keyup', keyboard_addKeyup);
+
+    window.removeEventListener('keydown', keyboard_addKeydown);
+}
+
+var sco_keyboards = localStorage.getItem('keyboard') === 'true'
+if (sco_keyboards) {
+    openKeyboard();
+    let keyboard = document.getElementById('consoleKeyboard');
+    keyboard?.classList.add('on');
+}</script></div><div><div class="needEndHide" id="rightside"><div class="rs_hide"><button class="translate" type="button" title="简繁转换" heotip="简繁转换">简</button><button class="mode" type="button" title="显示模式切换" heotip="显示模式切换" data-solitude-action="toggleTheme"><i class="fas fa-circle-half-stroke"></i></button><button class="aside pc" type="button" title="侧边栏" heotip="侧边栏" data-solitude-action="switchHideAside"><i class="fas fa-arrows-alt-h"></i></button><button class="keyboard pc" type="button" title="键盘快捷键" heotip="键盘快捷键" data-solitude-action="switchKeyboard"><i class="fas fa-keyboard"></i></button></div><div class="rs_show"><button class="config" type="button" title="扩展" heotip="扩展" data-solitude-action="toggleTargetClass" data-solitude-target=".rs_hide"><i class="fas fa-gear"></i></button><button class="mobile toc" type="button" title="目录" heotip="目录" data-solitude-action="toggleTargetClass" data-solitude-target="#card-toc" data-solitude-class="open"><i class="fas fa-list"></i></button></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav class="show" id="nav" data-solitude-action="onNavBlankClickCloseConsole" data-solitude-event="true"><div id="nav-group"><div id="blog_name"><a href="/" title="返回博客主页" id="site-name" heotip="返回博客主页"><span class="title">unenter</span><i class="solitude fas fa-home"></i></a></div><div id="page-name-mask"><div id="page-name"><a id="page-name-text" data-solitude-action="toTop" title="返回顶部" heotip="返回顶部">TIM定时中断</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span>文库</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/archives/"><i class="solitude  iconfont icon-folder-5-fill"></i><span>文章列表</span></a></li><li><a class="site-page child" href="/categories/"><i class="solitude  iconfont icon-checkbox-multiple-blank-fill"></i><span>全部分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="solitude  iconfont icon-price-tag-3-fill"></i><span>全部标签</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span>博客</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/links/"><i class="solitude  iconfont icon-group-fill"></i><span>友链</span></a></li><li><a class="site-page child" href="/charts/"><i class="solitude  iconfont icon-shuju8"></i><span>统计</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span>我的</span></a><ul class="menus_item_child"><li><a class="site-page child" href="/about/"><i class="solitude  iconfont icon-contacts-fill"></i><span>关于</span></a></li><li><a class="site-page child" href="/essay/"><i class="solitude  iconfont icon-essay"></i><span>即刻</span></a></li></ul></div></div></div><div id="nav-left"></div><div id="nav-right"><div class="nav-button" id="theme-toggle"><a class="site-page" href="/" data-solitude-action="runConfiguredAction" data-solitude-value="Solitude.toggleTheme()" data-solitude-prevent="true" title="切换模式" heotip="切换模式"><i class="solitude iconfont icon-moon-clear-fill"></i></a></div><div class="nav-button" id="randomPost_button"><a class="site-page" data-solitude-action="randomPost" data-solitude-prevent="true" title="随机一篇文章" heotip="随机一篇文章" href="javascript:void(0);"><i class="solitude fas fa-dice-d6"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索" heotip="搜索"><i class="solitude fas fa-magnifying-glass"></i></a></div><div class="nav-button" id="nav-console"><a class="console_switchbutton" data-solitude-action="toggleConsole" data-solitude-prevent="true" title="中控台" heotip="中控台" href="javascript:void(0);"><label><i class="left"></i><i class="center"></i><i class="right"></i></label></a></div><div class="nav-button" id="nav-totop" data-solitude-action="toTop" title="返回顶部" heotip="返回顶部"><a class="totopbtn"><i class="solitude fas fa-arrow-up"></i><span id="percent">0</span></a></div><div id="toggle-menu"><a class="site-page"><i class="solitude fas fa-bars"></i></a></div></div></div></nav><div class="post-cover-aside"><a class="post-cover-aside-link fancybox" href="/img/default.avif" target="_blank" rel="noopener" data-fancybox="images" data-caption="TIM定时中断" aria-label="TIM定时中断"><img class="post-cover-aside-img nolazyload" id="post-cover" src="/img/default.avif" alt="TIM定时中断"></a></div><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original" title="本文采用 原创 许可协议">原创</a><div class="tag_share"><div class="post-meta__tag-list"></div></div></div></div><h1 class="post-title">TIM定时中断</h1><div id="post-meta"><div class="meta-secondline"><span class="post-meta-wordcount"><i class="post-meta-icon solitude fas fa-file-word" title="文章字数"></i><span class="word-count">2.5k</span></span><span class="post-meta-date" title="发布于 2026-10-23 19:31:45"><i class="post-meta-icon solitude fas fa-calendar-days"></i><time datetime="2026-10-23T11:31:45.551Z">2026-10-23T11:31:45.551Z</time></span><span class="post-meta-date" title="最后更新于 2026-10-23 20:00:21"><i class="post-meta-icon solitude fas fa-arrows-rotate"></i><time datetime="2026-10-23T12:00:21.962Z">2026-10-23T12:00:21.962Z</time></span><span class="post-meta-readtime"><i class="post-meta-icon solitude fas fa-clock" title="阅读时长"></i><span>10 分钟</span></span><span class="post-meta-position" title="作者 IP 属地China"><i class="post-meta-icon solitude fas fa-location-dot"></i><span>China</span></span></div></div></div><div class="post-radius-bottom"></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content article-container"><h2 id="定时器类型"><a href="#定时器类型" class="headerlink" title="定时器类型"></a>定时器类型</h2><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>编号</th>
+<th>总线</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>高级定时器</td>
+<td>TIM1、TIM8</td>
+<td>APB2</td>
+<td>拥有通用定时器全部功能，并额外具有重复计数器、死区生成、互补输出、刹车输入等功能</td>
+</tr>
+<tr>
+<td>通用定时器</td>
+<td>TIM2、TIM3、TIM4、TIM5</td>
+<td>APB1</td>
+<td>拥有基本定时器全部功能，并额外具有内外时钟源选择、输入捕获、输出比较、编码器接口、主从触发模式等功能</td>
+</tr>
+<tr>
+<td>基本定时器</td>
+<td>TIM6、TIM7</td>
+<td>APB1</td>
+<td>拥有定时中断、主模式触发DAC的功能</td>
+</tr>
+</tbody></table>
+<pre class="mermaid">
+graph LR
+    %% 定义样式类
+    classDef gpio fill:#e1f5fe,stroke:#4fc3f7,stroke-width:2px,color:#0277bd,rx:8,ry:8;
+    classDef rcc fill:#ffebee,stroke:#ef9a9a,stroke-width:2px,color:#c62828,rx:8,ry:8;
+    classDef source fill:#e8f5e9,stroke:#a5d6a7,stroke-width:2px,color:#2e7d32,rx:8,ry:8;
+    classDef mux fill:#fff9c4,stroke:#fff59d,stroke-width:2px,color:#f57f17,rx:8,ry:8;
+    classDef core fill:#ffe0b2,stroke:#ffb74d,stroke-width:2px,color:#e65100,rx:8,ry:8;
+    classDef nvic fill:#e0f2f1,stroke:#80cbc4,stroke-width:2px,color:#00695c,rx:8,ry:8;
+    classDef ext fill:#fff3e0,stroke:#ffcc80,stroke-width:2px,color:#ef6c00,rx:8,ry:8;
+
+    subgraph ClockSources [时钟源]
+        direction TB
+        RCC[RCC<br/>内部时钟]:::rcc
+        ETR[ETR<br/>外部时钟]:::source
+        ITRx[ITRx<br/>其他定时器]:::ext
+        TIx[TIx<br/>捕获通道]:::ext
+    end
+
+    GPIO_ETR[GPIO]:::gpio --> ETR
+    GPIO_TIx[GPIO]:::gpio --> TIx
+
+    MUX_Sub[多路复用]:::mux
+    ITRx --> MUX_Sub
+    TIx --> MUX_Sub
+
+    MUX[内部时钟模式<br/>外部时钟模式2<br/>外部时钟模式1<br/>编码器模式]:::mux
+    RCC --> MUX
+    ETR --> MUX
+    MUX_Sub --> MUX
+
+    subgraph TimeBase [时基单元]
+        direction LR
+        PSC[PSC<br/>预分频器]:::core
+        CNT[CNT<br/>计数器]:::core
+        ARR[ARR<br/>自动重装器]:::core
+        
+        PSC --> CNT
+        ARR <--> CNT
+    end
+
+    MUX --> PSC
+    
+    RunCtrl[运行控制]:::core --> TimeBase
+    
+    IRQCtrl[中断<br/>输出控制]:::nvic
+    NVIC[NVIC]:::nvic
+
+    CNT --> IRQCtrl
+    IRQCtrl --> NVIC
+
+    %% 整体样式设置
+    style ClockSources fill:#f8fbff,stroke:#d6e4f0,stroke-width:2px,stroke-dasharray: 5 5
+    style TimeBase fill:#fce4ec,stroke:#f48fb1,stroke-width:2px
+</pre>
+
+
+<h2 id="掌握函数"><a href="#掌握函数" class="headerlink" title="掌握函数"></a>掌握函数</h2><table>
+<thead>
+<tr>
+<th>函数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TIM_InternalClockConfig</td>
+<td>配置时钟源</td>
+</tr>
+<tr>
+<td>TIM_TimeBaseInitTypeDef</td>
+<td>定义结构体变量</td>
+</tr>
+<tr>
+<td>TIM_TimeBaseInit</td>
+<td>配置TIM2的时基单元</td>
+</tr>
+<tr>
+<td>TIM_ClearFlag</td>
+<td>中断输出配置</td>
+</tr>
+<tr>
+<td>TIM_ITConfig</td>
+<td>开启的更新中断</td>
+</tr>
+<tr>
+<td>NVIC_PriorityGroupConfig</td>
+<td>NVIC中断分组</td>
+</tr>
+<tr>
+<td>TIM_Cmd</td>
+<td>TIM使能</td>
+</tr>
+<tr>
+<td>TIM_GetITStatus</td>
+<td>判断是否是触发中断</td>
+</tr>
+</tbody></table>
+<h2 id="配置步骤"><a href="#配置步骤" class="headerlink" title="配置步骤"></a>配置步骤</h2><ul>
+<li>开启时钟</li>
+<li>配置时钟源</li>
+<li>时基单元初始化</li>
+<li>中断输出配置</li>
+<li>NVIC中断分组</li>
+<li>NVIC配置</li>
+<li>TIM使能</li>
+</ul>
+<h2 id="代码演示"><a href="#代码演示" class="headerlink" title="代码演示"></a>代码演示</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">Timer_Init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">/*开启时钟*/</span></span><br><span class="line">	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);			<span class="comment">//开启TIM2的时钟</span></span><br><span class="line">	</span><br><span class="line">	<span class="comment">/*配置时钟源*/</span></span><br><span class="line">	TIM_InternalClockConfig(TIM2);		<span class="comment">//选择TIM2为内部时钟，若不调用此函数，TIM默认也为内部时钟</span></span><br><span class="line">	</span><br><span class="line">	<span class="comment">/*时基单元初始化*/</span></span><br><span class="line">	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure;				<span class="comment">//定义结构体变量</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;		<span class="comment">//时钟分频，选择不分频，此参数用于配置滤波器时钟，不影响时基单元功能</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;	<span class="comment">//计数器模式，选择向上计数</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_Period = <span class="number">10000</span> - <span class="number">1</span>;				<span class="comment">//计数周期，即ARR的值</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_Prescaler = <span class="number">7200</span> - <span class="number">1</span>;				<span class="comment">//预分频器，即PSC的值</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_RepetitionCounter = <span class="number">0</span>;			<span class="comment">//重复计数器，高级定时器才会用到</span></span><br><span class="line">	TIM_TimeBaseInit(TIM2, &amp;TIM_TimeBaseInitStructure);				<span class="comment">//将结构体变量交给TIM_TimeBaseInit，配置TIM2的时基单元	</span></span><br><span class="line">	</span><br><span class="line">	<span class="comment">/*中断输出配置*/</span></span><br><span class="line">	TIM_ClearFlag(TIM2, TIM_FLAG_Update);						<span class="comment">//清除定时器更新标志位</span></span><br><span class="line">																<span class="comment">//TIM_TimeBaseInit函数末尾，手动产生了更新事件</span></span><br><span class="line">																<span class="comment">//若不清除此标志位，则开启中断后，会立刻进入一次中断</span></span><br><span class="line">																<span class="comment">//如果不介意此问题，则不清除此标志位也可</span></span><br><span class="line">	</span><br><span class="line">	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);					<span class="comment">//开启TIM2的更新中断</span></span><br><span class="line">	</span><br><span class="line">	<span class="comment">/*NVIC中断分组*/</span></span><br><span class="line">	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);				<span class="comment">//配置NVIC为分组2</span></span><br><span class="line">																<span class="comment">//即抢占优先级范围：0~3，响应优先级范围：0~3</span></span><br><span class="line">																<span class="comment">//此分组配置在整个工程中仅需调用一次</span></span><br><span class="line">																<span class="comment">//若有多个中断，可以把此代码放在main函数内，while循环之前</span></span><br><span class="line">																<span class="comment">//若调用多次配置分组的代码，则后执行的配置会覆盖先执行的配置</span></span><br><span class="line">	</span><br><span class="line">	<span class="comment">/*NVIC配置*/</span></span><br><span class="line">	NVIC_InitTypeDef NVIC_InitStructure;						<span class="comment">//定义结构体变量</span></span><br><span class="line">	NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;				<span class="comment">//选择配置NVIC的TIM2线</span></span><br><span class="line">	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;				<span class="comment">//指定NVIC线路使能</span></span><br><span class="line">	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = <span class="number">2</span>;	<span class="comment">//指定NVIC线路的抢占优先级为2</span></span><br><span class="line">	NVIC_InitStructure.NVIC_IRQChannelSubPriority = <span class="number">1</span>;			<span class="comment">//指定NVIC线路的响应优先级为1</span></span><br><span class="line">	NVIC_Init(&amp;NVIC_InitStructure);								<span class="comment">//将结构体变量交给NVIC_Init，配置NVIC外设</span></span><br><span class="line">	</span><br><span class="line">	<span class="comment">/*TIM使能*/</span></span><br><span class="line">	TIM_Cmd(TIM2, ENABLE);			<span class="comment">//使能TIM2，定时器开始运行</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">TIM2_IRQHandler</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">if</span> (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)		<span class="comment">//判断是否是TIM2的更新事件触发的中断</span></span><br><span class="line">	&#123;</span><br><span class="line">		Num ++;												<span class="comment">//Num变量自增，用于测试定时中断</span></span><br><span class="line">		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);			<span class="comment">//清除TIM2更新事件的中断标志位</span></span><br><span class="line">															<span class="comment">//中断标志位必须清除</span></span><br><span class="line">															<span class="comment">//否则中断将连续不断地触发，导致主程序卡死</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+<h2 id="TIM-输出比较"><a href="#TIM-输出比较" class="headerlink" title="TIM 输出比较"></a>TIM 输出比较</h2><table>
+<thead>
+<tr>
+<th align="center">模式</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">冻结</td>
+<td align="left">CNT&#x3D;CCR时，REF保持为原状态</td>
+</tr>
+<tr>
+<td align="center">匹配时置有效电平</td>
+<td align="left">CNT&#x3D;CCR时，REF置有效电平</td>
+</tr>
+<tr>
+<td align="center">匹配时置无效电平</td>
+<td align="left">CNT&#x3D;CCR时，REF置无效电平</td>
+</tr>
+<tr>
+<td align="center">匹配时电平翻转</td>
+<td align="left">CNT&#x3D;CCR时，REF电平翻转</td>
+</tr>
+<tr>
+<td align="center">强制为无效电平</td>
+<td align="left">CNT与CCR无效，REF强制为无效电平</td>
+</tr>
+<tr>
+<td align="center">强制为有效电平</td>
+<td align="left">CNT与CCR无效，REF强制为有效电平</td>
+</tr>
+<tr>
+<td align="center">PWM模式1</td>
+<td align="left">向上计数：CNT&lt;CCR时，REF置有效电平，CNT≥CCR时，REF置无效电平<br>向下计数：CNT&gt;CCR时，REF置无效电平，CNT≤CCR时，REF置有效电平</td>
+</tr>
+<tr>
+<td align="center">PWM模式2</td>
+<td align="left">向上计数：CNT&lt;CCR时，REF置无效电平，CNT≥CCR时，REF置有效电平<br>向下计数：CNT&gt;CCR时，REF置有效电平，CNT≤CCR时，REF置无效电平</td>
+</tr>
+</tbody></table>
+<pre class="mermaid">
+graph LR
+    %% 定义样式类 (去除了不受支持的 rx 和 ry 属性)
+    classDef timeCore fill:#ffe0b2,stroke:#ffb74d,stroke-width:2px,color:#e65100;
+    classDef runCtrl fill:#fff3e0,stroke:#ffcc80,stroke-width:2px,color:#ef6c00;
+    classDef compUnit fill:#f3e5f5,stroke:#ce93d8,stroke-width:2px,color:#6a1b9a;
+    classDef gpio fill:#e1f5fe,stroke:#4fc3f7,stroke-width:2px,color:#0277bd;
+
+    %% 左侧输入信号 (给个占位字符避免空括号报错)
+    Input((" ")):::timeCore
+    Input --> PSC
+
+    %% 运行控制
+    RunCtrl[运行控制]:::runCtrl
+    
+    %% 时基单元
+    subgraph TimeBase [时基单元]
+        direction LR
+        PSC[PSC<br/>预分频器]:::timeCore
+        CNT[CNT<br/>计数器]:::timeCore
+        ARR[ARR<br/>自动重装器]:::timeCore
+        
+        PSC --> CNT
+        ARR <--> CNT
+    end
+
+    RunCtrl --> PSC
+
+    %% 输出比较单元
+    subgraph OutputCompare ["输出比较单元 x4"]
+        direction LR
+        CCR[CCR<br/>捕获/比较器]:::compUnit
+        %% 关键修复：使用 HTML 实体编码代替 < 和 ≥
+        Logic["CNT &lt; CCR时，REF置有效电平<br/>CNT &ge; CCR时，REF置无效电平"]:::compUnit
+        Polarity[极性选择<br/>输出使能]:::compUnit
+        
+        CCR --> Logic
+        Logic -->|REF| Polarity
+    end
+
+    CNT --> CCR
+    GPIO[GPIO]:::gpio
+    Polarity --> GPIO
+
+    %% 整体样式
+    style TimeBase fill:#f8fbff,stroke:#d6e4f0,stroke-width:2px,stroke-dasharray: 5 5
+    style OutputCompare fill:#f8fbff,stroke:#d6e4f0,stroke-width:2px,stroke-dasharray: 5 5
+    style Input display:none
+</pre>
+
+<ul>
+<li>PWM频率： Freq &#x3D; CK_PSC &#x2F; (PSC + 1) &#x2F; (ARR + 1)</li>
+<li>PWM占空比： Duty &#x3D; CCR &#x2F; (ARR + 1)</li>
+<li>PWM分辨率： Reso &#x3D; 1 &#x2F; (ARR + 1)</li>
+</ul>
+<h2 id="PWM配置步骤"><a href="#PWM配置步骤" class="headerlink" title="PWM配置步骤"></a>PWM配置步骤</h2><ul>
+<li>开启时钟</li>
+<li>GPIO重映射</li>
+<li>GPIO初始化</li>
+<li>配置时钟源</li>
+<li>输出比较初始化</li>
+<li>TIM使能</li>
+</ul>
+<h3 id="掌握函数-1"><a href="#掌握函数-1" class="headerlink" title="掌握函数"></a>掌握函数</h3><table>
+<thead>
+<tr>
+<th>函数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GPIO_PinRemapConfig</td>
+<td>GPIO重映射  注:必须先开启AFIO的时钟</td>
+</tr>
+<tr>
+<td>TIM_OCInitTypeDef</td>
+<td>定义结构体变量</td>
+</tr>
+<tr>
+<td>TIM_OCStructInit</td>
+<td>结构体初始化</td>
+</tr>
+<tr>
+<td>TIM_OC1Init</td>
+<td>配置输出比较通道</td>
+</tr>
+<tr>
+<td>TIM_SetCompare1&#x2F;2&#x2F;3&#x2F;4</td>
+<td>设置CCR1&#x2F;2&#x2F;3&#x2F;4的值</td>
+</tr>
+</tbody></table>
+<h3 id="代码演示-1"><a href="#代码演示-1" class="headerlink" title="代码演示"></a>代码演示</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">PWM_SetCompare1</span><span class="params">(<span class="type">uint16_t</span> Compare)</span></span><br><span class="line">&#123;</span><br><span class="line">	TIM_SetCompare1(TIM2, Compare);		<span class="comment">//设置CCR1的值</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">	<span class="comment">/*时基单元初始化*/</span></span><br><span class="line">	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure;				<span class="comment">//定义结构体变量</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;     <span class="comment">//时钟分频，选择不分频，此参数用于配置滤波器时钟，不影响时基单元功能</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up; <span class="comment">//计数器模式，选择向上计数</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_Period = <span class="number">100</span> - <span class="number">1</span>;					<span class="comment">//计数周期，即ARR的值</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_Prescaler = <span class="number">720</span> - <span class="number">1</span>;				<span class="comment">//预分频器，即PSC的值</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_RepetitionCounter = <span class="number">0</span>;            <span class="comment">//重复计数器，高级定时器才会用到</span></span><br><span class="line">	TIM_TimeBaseInit(TIM2, &amp;TIM_TimeBaseInitStructure);             <span class="comment">//将结构体变量交给TIM_TimeBaseInit，配置TIM2的时基单元</span></span><br><span class="line">	</span><br><span class="line">	<span class="comment">/*输出比较初始化*/</span></span><br><span class="line">	TIM_OCInitTypeDef TIM_OCInitStructure;							<span class="comment">//定义结构体变量</span></span><br><span class="line">	TIM_OCStructInit(&amp;TIM_OCInitStructure);							<span class="comment">//结构体初始化，若结构体没有完整赋值</span></span><br><span class="line">																	<span class="comment">//则最好执行此函数，给结构体所有成员都赋一个默认值</span></span><br><span class="line">																	<span class="comment">//避免结构体初值不确定的问题</span></span><br><span class="line">	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;				<span class="comment">//输出比较模式，选择PWM模式1</span></span><br><span class="line">	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;		<span class="comment">//输出极性，选择为高，若选择极性为低，则输出高低电平取反</span></span><br><span class="line">	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;	<span class="comment">//输出使能</span></span><br><span class="line">	TIM_OCInitStructure.TIM_Pulse = <span class="number">0</span>;								<span class="comment">//初始的CCR值</span></span><br><span class="line">	TIM_OC1Init(TIM2, &amp;TIM_OCInitStructure);						<span class="comment">//将结构体变量交给TIM_OC1Init，配置TIM2的输出比较通道1</span></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+
+
+<pre class="mermaid">
+graph LR
+    %% 定义样式类 (淡蓝、浅紫、浅黄、浅橙，去除了绿色)
+    classDef gpio fill:#e1f5fe,stroke:#4fc3f7,stroke-width:2px,color:#0277bd,rx:8,ry:8;
+    classDef purple fill:#f3e5f5,stroke:#ce93d8,stroke-width:2px,color:#6a1b9a,rx:8,ry:8;
+    classDef yellow fill:#fff9c4,stroke:#fff59d,stroke-width:2px,color:#f57f17,rx:8,ry:8;
+    classDef orange fill:#ffe0b2,stroke:#ffb74d,stroke-width:2px,color:#e65100,rx:8,ry:8;
+
+    %% 左侧 GPIO
+    GPIO[GPIO]:::gpio
+
+    %% 输入捕获单元 (淡蓝色背景)
+    subgraph InputCapture [输入捕获单元1]
+        direction LR
+        F[滤波器]:::purple
+        Edge[边沿检测<br/>极性选择]:::purple
+        Mux[/多路复用器/]:::yellow
+        Div[分频器]:::purple
+        CCR1[CCR1<br/>捕获/比较器]:::purple
+    end
+
+    %% 中间上方控制 (淡黄、浅橙)
+    TrigSrc[/触发源选择/]:::yellow
+    Reset[从模式<br/>Reset]:::orange
+
+    %% 时基单元 (淡蓝色背景)
+    subgraph TimeBase [时基单元]
+        direction LR
+        PSC[PSC<br/>预分频器]:::orange
+        CNT[CNT<br/>计数器]:::orange
+        ARR[ARR<br/>自动重装器]:::orange
+    end
+
+    %% 连接关系
+    GPIO --> F
+    F --> Edge
+    
+    %% 信号分流
+    Edge -- "TI1FP1" --> Mux
+    Edge --> TrigSrc
+    
+    TrigSrc --> Reset
+    Reset ==> PSC
+    
+    PSC --> CNT
+    ARR <--> CNT
+    
+    Mux --> Div
+    Div --> CCR1
+    
+    %% 计数器向下连接到捕获/比较器 (加粗箭头)
+    CNT ==> CCR1
+
+    %% 整体样式设置 (淡蓝色虚线背景框)
+    style InputCapture fill:#f8fbff,stroke:#d6e4f0,stroke-width:2px,stroke-dasharray: 5 5
+    style TimeBase fill:#f8fbff,stroke:#d6e4f0,stroke-width:2px,stroke-dasharray: 5 5
+</pre>
+
+
+
+
+
+
+<h3 id="掌握函数-2"><a href="#掌握函数-2" class="headerlink" title="掌握函数"></a>掌握函数</h3><table>
+<thead>
+<tr>
+<th>函数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TIM_PrescalerConfig</td>
+<td>设置PSC的值</td>
+</tr>
+<tr>
+<td>TIM_ICInitTypeDef</td>
+<td>定义结构体变量</td>
+</tr>
+<tr>
+<td>TIM_PWMIConfig</td>
+<td>配置的输入捕获通道</td>
+</tr>
+<tr>
+<td>TIM_SelectInputTrigger</td>
+<td>触发源选择</td>
+</tr>
+<tr>
+<td>TIM_SelectSlaveMode</td>
+<td>从模式选择复位</td>
+</tr>
+<tr>
+<td>TIM_GetCapture1&#x2F;2&#x2F;3&#x2F;4</td>
+<td>读取CCR1&#x2F;2&#x2F;3&#x2F;4中的值</td>
+</tr>
+<tr>
+<td>TIM_EncoderInterfaceConfig</td>
+<td>编码器接口配置</td>
+</tr>
+</tbody></table>
+<h3 id="代码演示-2"><a href="#代码演示-2" class="headerlink" title="代码演示"></a>代码演示</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">	<span class="comment">/*时基单元初始化*/</span></span><br><span class="line">	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure;				<span class="comment">//定义结构体变量</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;     <span class="comment">//时钟分频，选择不分频，此参数用于配置滤波器时钟，不影响时基单元功能</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up; <span class="comment">//计数器模式，选择向上计数</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_Period = <span class="number">100</span> - <span class="number">1</span>;					<span class="comment">//计数周期，即ARR的值</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_Prescaler = <span class="number">720</span> - <span class="number">1</span>;				<span class="comment">//预分频器，即PSC的值</span></span><br><span class="line">	TIM_TimeBaseInitStructure.TIM_RepetitionCounter = <span class="number">0</span>;            <span class="comment">//重复计数器，高级定时器才会用到</span></span><br><span class="line">	TIM_TimeBaseInit(TIM2, &amp;TIM_TimeBaseInitStructure);             <span class="comment">//将结构体变量交给TIM_TimeBaseInit，配置TIM2的时基单元</span></span><br><span class="line">	...</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line"><span class="type">void</span> <span class="title function_">PWM_SetCompare1</span><span class="params">(<span class="type">uint16_t</span> Compare)</span></span><br><span class="line">&#123;</span><br><span class="line">	TIM_SetCompare1(TIM2, Compare);		<span class="comment">//设置CCR1的值</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">PWM_SetPrescaler</span><span class="params">(<span class="type">uint16_t</span> Prescaler)</span></span><br><span class="line">&#123;</span><br><span class="line">	TIM_PrescalerConfig(TIM2, Prescaler, TIM_PSCReloadMode_Immediate);		<span class="comment">//设置PSC的值</span></span><br><span class="line">&#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">uint32_t</span> <span class="title function_">IC_GetFreq</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1000000</span> / (TIM_GetCapture1(TIM3) + <span class="number">1</span>);		<span class="comment">//测周法得到频率fx = fc / N，这里不执行+1的操作也可</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></article><div class="post-copyright"><div class="post-copyright__author_group"><div class="post-copyright__author_img"><img class="post-copyright__author_img_front" src="/img/avatar.avif"></div><div class="post-copyright__author_name">unenter</div><div class="post-copyright__author_desc"></div></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div id="quit-box" data-solitude-action="hideReward"></div><div class="reward-link mode"><a class="reward-link-button" href="/atom.xml"><i class="solitude fas fa-seedling"></i>订阅</a></div></div></div><div class="social-share"><a class="social-share-ico icon-qq" target="_blank" rel="noopener" href="https://connect.qq.com/widget/shareqq/index.html?url=https%3A%2F%2Fblog.unenter.cn%2Fposts%2Ftim%2F&amp;title=TIM%E5%AE%9A%E6%97%B6%E4%B8%AD%E6%96%AD&amp;desc=undefined&amp;summary=undefined&amp;site=TIM%E5%AE%9A%E6%97%B6%E4%B8%AD%E6%96%AD&amp;pics=%2Fimg%2Fdefault.avif" title="分享到QQ" heotip="分享到QQ"><i class="solitude fab fa-qq"></i></a><a class="social-share-ico icon-twitter" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fblog.unenter.cn%2Fposts%2Ftim%2F&amp;text=TIM%E5%AE%9A%E6%97%B6%E4%B8%AD%E6%96%AD" title="分享到Twitter" heotip="分享到Twitter"><i class="solitude fab fa-twitter"></i></a><a class="social-share-ico icon-telegram" target="_blank" rel="noopener" href="https://t.me/share/url?url=https%3A%2F%2Fblog.unenter.cn%2Fposts%2Ftim%2F&amp;text=TIM%E5%AE%9A%E6%97%B6%E4%B8%AD%E6%96%AD" title="分享到Telegram" heotip="分享到Telegram"><i class="solitude fab fa-telegram"></i></a><a class="social-share-ico icon-linkedin" target="_blank" rel="noopener" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3A%2F%2Fblog.unenter.cn%2Fposts%2Ftim%2F&amp;title=TIM%E5%AE%9A%E6%97%B6%E4%B8%AD%E6%96%AD&amp;summary=undefined&amp;source=TIM%E5%AE%9A%E6%97%B6%E4%B8%AD%E6%96%AD" title="分享到LinkedIn" heotip="分享到LinkedIn"><i class="solitude fab fa-linkedin"></i></a></div><div class="post-copyright__notice"><span class="post-copyright-info">本文是原创文章，采用<a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans">CC BY-NC-SA 4.0</a>许可协议，完整转载请注明来自<a href="/">unenter</a></span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__tag-list"></div></div></div><nav class="needEndHide pagination-post" id="pagination"><div class="next-post pull-full"><a href="/posts/exti/"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">EXTI外部中断</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="card-info-avatar is-center"><div class="top-group"><div class="sayhi" id="sayhi" data-solitude-action="changeWittyWord"></div></div></div><div class="avatar"><img alt="头像" src="/img/avatar.webp"></div><div class="description">This is my Blog</div><div class="bottom-group"><span class="left"><div class="name">unenter</div><div class="desc">只有迎风，风筝才能飞得更高。</div></span><div class="social-icons is-center"><a class="social-icon" target="_blank" rel="noopener" href="https://github.com/unenter" title="Github" heotip="Github"><i class="solitude  iconfont icon-github"></i></a><a class="social-icon" target="_blank" rel="noopener" href="https://space.bilibili.com/694960998" title="Bilibili" heotip="Bilibili"><i class="solitude  iconfont icon-bilibili-fill"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="solitude fas fa-bars"></i><span>文章目录</span></div><div class="toc-content" id="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9A%E6%97%B6%E5%99%A8%E7%B1%BB%E5%9E%8B"><span class="toc-text">定时器类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8E%8C%E6%8F%A1%E5%87%BD%E6%95%B0"><span class="toc-text">掌握函数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E6%AD%A5%E9%AA%A4"><span class="toc-text">配置步骤</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E6%BC%94%E7%A4%BA"><span class="toc-text">代码演示</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#TIM-%E8%BE%93%E5%87%BA%E6%AF%94%E8%BE%83"><span class="toc-text">TIM 输出比较</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PWM%E9%85%8D%E7%BD%AE%E6%AD%A5%E9%AA%A4"><span class="toc-text">PWM配置步骤</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8E%8C%E6%8F%A1%E5%87%BD%E6%95%B0-1"><span class="toc-text">掌握函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E6%BC%94%E7%A4%BA-1"><span class="toc-text">代码演示</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8E%8C%E6%8F%A1%E5%87%BD%E6%95%B0-2"><span class="toc-text">掌握函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E6%BC%94%E7%A4%BA-2"><span class="toc-text">代码演示</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="solitude fas fa-map"></i><span>最近发布</span></div><div class="aside-list"><a class="aside-list-item" href="/posts/tim/" title="TIM定时中断"><div class="thumbnail"><img alt="TIM定时中断" src="/img/default.avif"></div><div class="content"><span class="title" href="/posts/tim/" title="TIM定时中断">TIM定时中断</span></div></a><a class="aside-list-item" href="/posts/exti/" title="EXTI外部中断"><div class="thumbnail"><img alt="EXTI外部中断" src="/img/default.avif"></div><div class="content"><span class="title" href="/posts/exti/" title="EXTI外部中断">EXTI外部中断</span></div></a><a class="aside-list-item" href="/posts/gpio/" title="GPIO输入输出及OLED驱动"><div class="thumbnail"><img alt="GPIO输入输出及OLED驱动" src="/img/default.avif"></div><div class="content"><span class="title" href="/posts/gpio/" title="GPIO输入输出及OLED驱动">GPIO输入输出及OLED驱动</span></div></a><a class="aside-list-item" href="/posts/orangepi/" title="OrangePi安装QQ机器人"><div class="thumbnail"><img alt="OrangePi安装QQ机器人" src="https://cdn.jsdelivr.net/npm/ashenwitch/post/orangepi.jpg"></div><div class="content"><span class="title" href="/posts/orangepi/" title="OrangePi安装QQ机器人">OrangePi安装QQ机器人</span></div></a></div></div></div></div></main><footer id="footer"><div id="footer_deal"><a class="deal_link" target="_blank" rel="noopener" href="https://github.com/unenter" title="Github" heotip="Github"><i class="solitude  iconfont icon-github"></i></a><a class="deal_link" target="_blank" rel="noopener" href="https://x.com/sakutulip" title="X" heotip="X"><i class="solitude  iconfont icon-TwitterX"></i></a><a class="deal_link" target="_blank" rel="noopener" href="https://discord.com/invite/semBTTSN" title="Discord" heotip="Discord"><i class="solitude  iconfont icon-discord"></i></a><div><div class="nolazyload footer_mini_logo" id="footer_mini_logo" title="返回顶部" heotip="返回顶部" data-solitude-action="toTop"><img src= "" data-lazy-src="/img/avatar.webp" alt="返回顶部"></div></div><a class="deal_link" target="_blank" rel="noopener" href="https://y.music.163.com/m/user?id=5112221303" title="Music" heotip="Music"><i class="solitude  iconfont icon-wangyiyunyinle"></i></a><a class="deal_link" href="mailto:breadeggs@hotmail.com" title="Email" heotip="Email"><i class="solitude  iconfont icon-mail-line"></i></a><a class="deal_link" target="_blank" rel="noopener" href="https://t.me/nullenter" title="Telegram" heotip="Telegram"><i class="solitude iconfont icon-telegram"></i></a></div><div><div id="st-footer"><div class="footer-group"><h3 class="footer-title">导航</h3><div class="footer-links"><a class="footer-item" href="/archives/" title="归档">归档</a><a class="footer-item" href="/categories/" title="分类">分类</a><a class="footer-item" href="/tags/" title="标签">标签</a><a class="footer-item" href="/links/" title="友链">友链</a></div></div><div class="footer-group"><h3 class="footer-title">协议</h3><div class="footer-links"><a class="footer-item" href="/operations/" title="Operations">Operations</a><a class="footer-item" href="/privacy/" title="Privacy">Privacy</a><a class="footer-item" href="/copyright/" title="Copyright">Copyright</a><a class="footer-item" href="/cookies/" title="Cookies">Cookies</a></div></div><div class="footer-group"><div class="footer-title-group"><h3 class="footer-title">友链</h3><button class="random-friends-btn" data-solitude-action="randomLinksList" title="友链" heotip="友链"><i class="solitude fas fa-arrows-rotate"></i></button></div><div class="footer-links" id="friend-links-in-footer"></div></div></div></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div class="copyright">© 2023 - 2026 By<a class="footer-bar-link" href="/" title="unenter">unenter</a></div><div class="beian-group"><div><a class="footer-bar-link" target="_blank" rel="noopener" href="https://icp.gov.moe/?keyword=20260002" title="萌ICP备20260002" heotip="萌ICP备20260002"><div><img class="beian-icon" src= "" data-lazy-src="/img/moe.png" alt="萌ICP备20260002"></div><span class="beian-name">萌ICP备20260002</span></a></div><a class="footer-bar-link" target="_blank" rel="noopener" href="https://hexo.io/" title="框架：Hexo" heotip="框架：Hexo">框架：Hexo</a><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/everfu/hexo-theme-solitude" title="主题：Solitude" heotip="主题：Solitude">主题：Solitude</a></div></div><div><div class="footer-bar-right"><a class="footer-bar-link" href="/atom.xml" title="RSS" heotip="RSS">RSS</a><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/everfu/hexo-theme-solitude/blob/main/LICENSE" title="License" heotip="License"><i class="solitude fas fa-copyright"></i><i class="solitude fab fa-creative-commons-by"></i><i class="solitude fab fa-creative-commons-nc"></i><i class="solitude fab fa-creative-commons-nd"></i></a></div></div></div></div><div class="comment-barrage needEndHide"></div></footer></div><div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="solitude fas fa-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="solitude fas fa-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="solitude fas fa-arrows-rotate"></i></div><div class="rightMenu-item" id="menu-top"><i class="solitude fas fa-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext" title="复制选中文字" heotip="复制选中文字"><i class="solitude fas fa-clone"></i><span>复制选中文字</span></div><div class="rightMenu-item" id="menu-pastetext" title="粘贴文字" heotip="粘贴文字"><i class="solitude fas fa-clipboard"></i><span>粘贴文字</span></div><div class="rightMenu-item" id="menu-newwindow" title="在新窗口打开" heotip="在新窗口打开"><i class="solitude far fa-window-maximize"></i><span>在新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink" title="复制链接地址" heotip="复制链接地址"><i class="solitude fas fa-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg" title="复制此图片" heotip="复制此图片"><i class="solitude fas fa-clone"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg" title="下载此图片" heotip="下载此图片"><i class="solitude fas fa-cloud-arrow-down"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-search" title="站内搜索" heotip="站内搜索"><i class="solitude fas fa-magnifying-glass"></i><span>站内搜索</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><div class="rightMenu-item" id="menu-randomPost" data-solitude-action="runConfiguredAction" data-solitude-value="toRandomPost()" title="随便逛逛" heotip="随便逛逛"><i class="solitude iconfont icon-dice-line"></i><span>随便逛逛</span></div><div class="rightMenu-item" data-solitude-action="runConfiguredAction" data-solitude-value="pjax.loadUrl('/categories/')" title="全部分类" heotip="全部分类"><i class="solitude iconfont icon-checkbox-multiple-blank-fill"></i><span>全部分类</span></div><div class="rightMenu-item" data-solitude-action="runConfiguredAction" data-solitude-value="pjax.loadUrl('/tags/')" title="全部标签" heotip="全部标签"><i class="solitude iconfont icon-price-tag-3-fill"></i><span>全部标签</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><div class="rightMenu-item" id="menu-darkmode" data-solitude-action="switchDarkMode"><i class="solitude fas fa-circle-half-stroke"></i><span class="menu-darkmode-text" title="深色模式" heotip="深色模式">深色模式</span></div><div class="rightMenu-item" id="menu-translate"><i class="solitude fas fa-language"></i><span title="转为繁体" heotip="转为繁体">转为繁体</span></div></div></div><div id="rightmenu-mask"></div></div><div><!-- Critical scripts loaded synchronously--><script src="/js/utils.js?v=4.0.0"></script><!-- Non-critical scripts loaded asynchronously--><script defer src="/js/third_party/waterfall.min.js?v=4.0.0"></script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js"></script><!-- Feature-specific scripts loaded asynchronously--><script defer src="https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/typeit@8.8.7/dist/index.umd.min.js"></script><!-- UI enhancement scripts--><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/dist/medium-zoom.min.js"></script><!-- Music player scripts--><!-- Cover color processing scripts--><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+Solitude.addGlobalFn('pjaxSend', () => {
+  Pace.restart()
+}, 'pace_restart')
+</script><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- Search functionality--><!-- Main module dynamically imports enabled first-party features.--><script type="module" src="/js/main.js?v=4.0.0"></script><script src="/js/schedule.js"></script><script src="https://open.lightxi.com/unpkg/chinese-lunar@0.1.4/lib/chinese-lunar.js"></script><script src="/js/custom.js"></script><div class="js-pjax"><script>mermaid.run();
+</script></div></div><!-- pjax--><script>function initPjax() {
+    if (typeof Pjax === 'undefined') {
+        setTimeout(initPjax, 100);
+        return;
+    }
+
+    const instance = new Pjax({
+        elements: 'a:not([target="_blank"])',
+        selectors: ["title","#body-wrap","#site-config","meta[name=\"description\"]",".js-pjax","meta[property^=\"og:\"]","#config-diff",".rs_show",".rs_hide"],
+        cacheBust: false,
+        analytics: false,
+        scrollRestoration: false
+    })
+
+    // Pjax dispatches synthetic resize/scroll events on window after every selector switch.
+    // Use a Node target so injected listeners that call event.target.contains() remain compatible.
+    instance.onSwitch = function () {
+        this.state.numPendingSwitches--
+
+        if (this.state.numPendingSwitches === 0) {
+            document.dispatchEvent(new Event('resize', { bubbles: true }))
+            document.dispatchEvent(new Event('scroll', { bubbles: true }))
+            this.afterAllSwitches()
+        }
+    }
+
+    Solitude.pjax = instance;
+
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+        const newScript = document.createElement('script')
+        const content = item.text || item.textContent || item.innerHTML || ""
+        Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+        newScript.appendChild(document.createTextNode(content))
+        item.parentNode.replaceChild(newScript, item)
+    })
+
+    document.addEventListener('pjax:send', () => {
+        document.dispatchEvent(new CustomEvent('solitude:beforeNavigate'))
+        Solitude.disposePage?.()
+        Object.values(window.globalFn?.pjax || {}).forEach(dispose => dispose())
+        if (window.globalFn) window.globalFn.pjax = {}
+    })
+
+    document.addEventListener('pjax:complete', async () => {
+        await Solitude.refresh()
+
+        document.querySelectorAll('script[data-pjax]').forEach(item => {
+            const newScript = document.createElement('script')
+            const content = item.text || item.textContent || item.innerHTML || ""
+            Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+            newScript.appendChild(document.createTextNode(content))
+            item.parentNode.replaceChild(newScript, item)
+        })
+
+        Solitude.config.lazyload.enable && window.lazyLoadInstance?.update()
+        document.dispatchEvent(new CustomEvent('solitude:afterNavigate', {
+            detail: {page: Solitude.page}
+        }))
+
+    })
+
+    document.addEventListener('pjax:error', (e) => {
+        if (e.request.status === 404) {
+            Solitude.navigate('/404.html')
+        }
+    })
+}
+
+// 初始化 Pjax
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPjax);
+} else {
+    initPjax();
+}</script><!-- google adsense--><div id="local-search"><div class="search-dialog" role="dialog" aria-modal="true" aria-labelledby="local-search-title"><nav class="search-nav"><span class="search-dialog-title" id="local-search-title">搜索</span><button class="search-close-button" type="button" aria-label="关闭搜索"><i class="solitude fas fa-xmark"></i></button></nav><div class="search-wrap"><div class="search-box"><input class="search-box-input" id="search-input" type="search" autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" placeholder="输入关键词快速查找" aria-label="输入关键词快速查找"></div><div id="search-suggestions" aria-label="热门搜索"></div><ul id="search-results" hidden></ul><div id="search-pagination"></div><div id="search-tips"></div></div></div><div id="search-mask"></div></div></body></html>
